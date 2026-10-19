@@ -227,18 +227,28 @@
             </div>
 
             <!-- Chat Scroll Container -->
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
-                <!-- Welcome Banner -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-center max-w-lg mx-auto space-y-2 my-4">
-                    <i class="fa-solid fa-shield-virus text-indigo-400 text-2xl"></i>
-                    <h3 class="text-sm font-semibold text-slate-200">Zero-Trust Direct WebRTC Session</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Messages & files flow directly peer-to-peer using WebRTC data channels with client-side AES encryption. No central server stores your chat data.
-                    </p>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
+            <!-- Welcome Banner -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 max-w-xl mx-auto space-y-3 my-4">
+                <div class="flex items-center justify-center gap-2 text-indigo-400">
+                    <i class="fa-solid fa-shield-virus text-2xl"></i>
+                    <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Quick Start Guide: How to Message</h3>
                 </div>
-            </div>
+                
+                <ol class="text-xs text-slate-300 text-left list-decimal list-inside space-y-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-lg border border-slate-800">
+                    <li><strong class="text-slate-100">Testing locally (2 Tabs):</strong> Switch to <strong>User Beta</strong> in another browser tab, or click <span class="text-indigo-400 font-medium">User Beta</span> under "Select Burner Persona" in the sidebar to simulate the recipient.</li>
+                    <li><strong class="text-slate-100">Share Link with a Friend:</strong> Click <span class="text-violet-400 font-medium"><i class="fa-solid fa-link"></i> Copy Direct Chat Link</span> and send it to your friend.</li>
+                    <li><strong class="text-slate-100">Manual ID Connection:</strong> Copy your <i>Peer ID</i> and paste it into your recipient's <span class="text-indigo-400 font-medium">Connect to Remote Peer</span> input box, then click <strong>Connect</strong>.</li>
+                    <li><strong class="text-slate-100">Optional Room Security:</strong> Set a matching 6-digit PIN under <span class="text-amber-400 font-medium"><i class="fa-solid fa-lock"></i> PIN-Locked Chat</span> to prevent unauthorized message previews.</li>
+                </ol>
 
-            <!-- Message Input Form -->
+                <p class="text-[11px] text-slate-400 italic">
+                    Messages flow directly peer-to-peer using WebRTC with client-side AES encryption. No central server stores your data.
+                </p>
+            </div>
+        </div>
+
+        <!-- Message Input Form -->
             <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
                 <!-- Selected File Preview Bar -->
                 <div id="file-preview-bar" class="hidden flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300">
@@ -471,11 +481,14 @@
                 try { peer.destroy(); } catch(e) {}
             }
 
-            updateStatus('Initializing Address...', 'amber');
+            // Instantly activate direct local fallback channel for fast testing across tabs
+            const targetPeerId = autoConnectTarget || (currentPersona.peerId === PRESET_BURNERS.alpha.peerId ? PRESET_BURNERS.beta.peerId : PRESET_BURNERS.alpha.peerId);
+            activateFallbackConnection(targetPeerId);
+
             document.getElementById('my-peer-id').value = currentPersona.peerId;
 
             try {
-                // Initialize Peer with standard options
+                // Initialize PeerJS
                 peer = new Peer(currentPersona.peerId, {
                     debug: 0
                 });
@@ -495,14 +508,14 @@
                 });
 
                 peer.on('error', (err) => {
-                    console.warn("PeerJS network warning/fallback triggered:", err.type);
-                    // Fallback to local messaging mode if WebSocket is restricted by Sandbox policy
-                    updateStatus('Active (Local P2P Channel)', 'emerald');
+                    console.warn("PeerJS connection note:", err.type);
+                    // Keep the active fallback channel working smoothly
+                    updateStatus('Ready (Local P2P Channel)', 'emerald');
                     document.getElementById('my-peer-id').value = currentPersona.peerId;
                 });
             } catch(e) {
-                console.warn("WebSocket blocked by environment - switching to fallback channel.");
-                updateStatus('Active (Local Session)', 'emerald');
+                console.warn("WebSocket restricted - active on local P2P broadcast.");
+                updateStatus('Ready (Local P2P Channel)', 'emerald');
                 document.getElementById('my-peer-id').value = currentPersona.peerId;
             }
         }
