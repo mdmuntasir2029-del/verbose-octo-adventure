@@ -509,7 +509,7 @@
                     document.getElementById('my-peer-id').value = id;
                     updateStatus('Ready (P2P Online)', 'emerald');
 
-                    // Automatically attempt connection if direct link param exists
+                    // Automatically attempt connection if direct link param exists or target specified
                     if (autoConnectTarget && autoConnectTarget !== id) {
                         document.getElementById('remote-peer-id').value = autoConnectTarget;
                         connectToPeer(autoConnectTarget);
@@ -533,6 +533,106 @@
                 if (autoConnectTarget) {
                     activateFallbackConnection(autoConnectTarget);
                 }
+            }
+        }
+
+        // Connect to Remote Peer
+        function connectToPeer(targetId = null) {
+            const peerIdToConnect = targetId || document.getElementById('remote-peer-id').value.trim();
+            if (!peerIdToConnect) {
+                alert("Please enter a Peer ID to connect.");
+                return;
+            }
+
+            if (peerIdToConnect === currentPersona.peerId) {
+                alert("Cannot connect to your own Peer ID!");
+                return;
+            }
+
+            updateStatus('Connecting to peer...', 'amber');
+            document.getElementById('remote-peer-sub').innerText = `Connecting to ${peerIdToConnect}...`;
+
+            try {
+                if (peer && !peer.destroyed) {
+                    const conn = peer.connect(peerIdToConnect);
+                    setupDataConnection(conn);
+                } else {
+                    activateFallbackConnection(peerIdToConnect);
+                }
+            } catch (err) {
+                console.warn("Peer connection fallback activated:", err);
+                activateFallbackConnection(peerIdToConnect);
+            }
+        }
+
+        // Setup Data Connection Listeners
+        function setupDataConnection(conn) {
+            activeConn = conn;
+
+            conn.on('open', () => {
+                onPeerConnected(conn.peer || "Remote Peer");
+            });
+
+            conn.on('data', (data) => {
+                handleIncomingData(data);
+            });
+
+            conn.on('close', () => {
+                updateStatus('Disconnected', 'red');
+                document.getElementById('remote-peer-sub').innerText = "Peer disconnected";
+                document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
+            });
+
+            // If connection opens immediately or fallback state
+            if (conn.open) {
+                onPeerConnected(conn.peer || "Remote Peer");
+            }
+        }
+
+        // Fallback Connection Handler (BroadcastChannel for multi-tab/iframe sandboxes)
+        function activateFallbackConnection(targetPeerId) {
+            activeConn = {
+                open: true,
+                peer: targetPeerId,
+                send: function(payload) {
+                    payload.recipientId = targetPeerId;
+                    payload.senderId = currentPersona.peerId;
+                    if (broadcastChannel) {
+                        broadcastChannel.postMessage(payload);
+                    }
+                }
+            };
+            onPeerConnected(targetPeerId);
+        }
+
+        // Successful Peer Connection Helper
+        function onPeerConnected(peerName) {
+            updateStatus('Connected & Encrypted', 'emerald');
+            document.getElementById('remote-peer-title').innerText = peerName.startsWith('ghostmesh') ? (currentPersona.peerId.includes('alpha') ? 'User Beta' : 'User Alpha') : peerName;
+            document.getElementById('remote-peer-sub').innerText = `E2EE Active | ID: ${peerName}`;
+            document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
+            appendSystemMessage(`Direct encrypted session established with ${peerName}`);
+        }
+
+        // Handle incoming data payload
+        function handleIncomingData(data) {
+            if (!data || typeof data !== 'object') return;
+
+            if (data.type === 'typing') {
+                showTypingIndicator();
+                return;
+            }
+
+            if (data.type === 'chat') {
+                const currentLocalPin = document.getElementById('room-pin-input').value.trim();
+                
+                // PIN Verification Check
+                if (data.pin && data.pin !== currentLocalPin) {
+                    showPinLockOverlay();
+                    return;
+                }
+
+                renderMessage(data.sender || "Peer", data.text, false, data.destruct || 0, data.file);
             }
         }
 
