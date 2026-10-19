@@ -429,7 +429,13 @@
             const urlParams = new URLSearchParams(window.location.search);
             const targetPeer = urlParams.get('peer');
             
-            loadPresetBurner('alpha', targetPeer);
+            // Default to 'alpha' unless opening a link meant to connect to an existing peer
+            if (targetPeer) {
+                // If a target peer is provided via URL (e.g. Incognito), switch to 'beta' profile automatically to avoid ID collision
+                loadPresetBurner('beta', targetPeer);
+            } else {
+                loadPresetBurner('alpha', null);
+            }
             setupCrossTabChannel();
         });
 
@@ -481,22 +487,19 @@
                 try { peer.destroy(); } catch(e) {}
             }
 
-            // Instantly activate direct local fallback channel for fast testing across tabs
-            const targetPeerId = autoConnectTarget || (currentPersona.peerId === PRESET_BURNERS.alpha.peerId ? PRESET_BURNERS.beta.peerId : PRESET_BURNERS.alpha.peerId);
-            activateFallbackConnection(targetPeerId);
-
             document.getElementById('my-peer-id').value = currentPersona.peerId;
 
             try {
-                // Initialize PeerJS
+                // Initialize PeerJS with auto-reconnect fallback
                 peer = new Peer(currentPersona.peerId, {
-                    debug: 0
+                    debug: 1
                 });
 
                 peer.on('open', (id) => {
                     document.getElementById('my-peer-id').value = id;
                     updateStatus('Ready (P2P Online)', 'emerald');
 
+                    // Automatically attempt connection if direct link param exists
                     if (autoConnectTarget && autoConnectTarget !== id) {
                         document.getElementById('remote-peer-id').value = autoConnectTarget;
                         connectToPeer(autoConnectTarget);
@@ -509,107 +512,16 @@
 
                 peer.on('error', (err) => {
                     console.warn("PeerJS connection note:", err.type);
-                    // Keep the active fallback channel working smoothly
-                    updateStatus('Ready (Local P2P Channel)', 'emerald');
-                    document.getElementById('my-peer-id').value = currentPersona.peerId;
+                    if (autoConnectTarget) {
+                        activateFallbackConnection(autoConnectTarget);
+                    } else {
+                        updateStatus('Ready (Local P2P Channel)', 'emerald');
+                    }
                 });
             } catch(e) {
-                console.warn("WebSocket restricted - active on local P2P broadcast.");
-                updateStatus('Ready (Local P2P Channel)', 'emerald');
-                document.getElementById('my-peer-id').value = currentPersona.peerId;
-            }
-        }
-
-        // Connect to Remote Peer
-        function connectToPeer(targetId = null) {
-            const peerId = targetId || document.getElementById('remote-peer-id').value.trim();
-            if (!peerId) {
-                alert("Please enter a valid Peer ID.");
-                return;
-            }
-
-            updateStatus('Connecting...', 'amber');
-            
-            if (peer && !peer.disconnected && !peer.destroyed && peer.open) {
-                try {
-                    const conn = peer.connect(peerId);
-                    setupDataConnection(conn);
-                } catch(e) {
-                    activateFallbackConnection(peerId);
-                }
-            } else {
-                activateFallbackConnection(peerId);
-            }
-        }
-
-        function activateFallbackConnection(peerId) {
-            activeConn = {
-                peer: peerId,
-                open: true,
-                send: function(data) {
-                    data.recipientId = peerId;
-                    data.senderPeerId = currentPersona.peerId;
-                    if (broadcastChannel) {
-                        broadcastChannel.postMessage(data);
-                    }
-                }
-            };
-
-            document.getElementById('remote-peer-title').innerText = peerId;
-            document.getElementById('remote-peer-sub').innerText = "Direct Local Channel Active";
-            document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-            updateStatus('Connected', 'emerald');
-
-            // Send handshake
-            activeConn.send({
-                type: 'handshake',
-                sender: currentPersona.displayName
-            });
-        }
-
-        // Setup Incoming / Outgoing WebRTC Connection Handlers
-        function setupDataConnection(conn) {
-            activeConn = conn;
-
-            conn.on('open', () => {
-                updateStatus('Connected (Peer-to-Peer)', 'emerald');
-                document.getElementById('remote-peer-title').innerText = conn.peer;
-                document.getElementById('remote-peer-sub').innerText = "Direct WebRTC DataChannel Active";
-                document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-
-                conn.send({
-                    type: 'handshake',
-                    sender: currentPersona.displayName
-                });
-            });
-
-            conn.on('data', (data) => {
-                handleIncomingData(data);
-            });
-
-            conn.on('close', () => {
-                updateStatus('Peer Disconnected', 'red');
-                document.getElementById('remote-peer-sub').innerText = "Peer left the session.";
-                document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-            });
-        }
-
-        // Handle Incoming WebRTC / Channel Data Payload
-        function handleIncomingData(data) {
-            if (data.type === 'handshake') {
-                document.getElementById('remote-peer-title').innerText = data.sender;
-                if (!activeConn || !activeConn.open) {
-                    activateFallbackConnection(data.senderPeerId || data.sender);
-                }
-                appendSystemMessage(`${data.sender} connected to the channel.`);
-            } else if (data.type === 'typing') {
-                showTypingIndicator();
-            } else if (data.type === 'chat') {
-                const roomPin = document.getElementById('room-pin-input').value.trim();
-                if (data.pin && data.pin !== roomPin) {
-                    showPinLockOverlay();
-                } else {
-                    renderMessage(data.sender, data.text, false, data.destruct, data.file);
+                console.warn("WebSocket restricted - falling back to direct connection.");
+                if (autoConnectTarget) {
+                    activateFallbackConnection(autoConnectTarget);
                 }
             }
         }
