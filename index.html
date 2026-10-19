@@ -517,7 +517,7 @@
 
             updateStatus('Connecting...', 'amber');
             
-            if (peer && !peer.disconnected && !peer.destroyed) {
+            if (peer && !peer.disconnected && !peer.destroyed && peer.open) {
                 try {
                     const conn = peer.connect(peerId);
                     setupDataConnection(conn);
@@ -535,6 +535,7 @@
                 open: true,
                 send: function(data) {
                     data.recipientId = peerId;
+                    data.senderPeerId = currentPersona.peerId;
                     if (broadcastChannel) {
                         broadcastChannel.postMessage(data);
                     }
@@ -584,6 +585,9 @@
         function handleIncomingData(data) {
             if (data.type === 'handshake') {
                 document.getElementById('remote-peer-title').innerText = data.sender;
+                if (!activeConn || !activeConn.open) {
+                    activateFallbackConnection(data.senderPeerId || data.sender);
+                }
                 appendSystemMessage(`${data.sender} connected to the channel.`);
             } else if (data.type === 'typing') {
                 showTypingIndicator();
@@ -608,7 +612,7 @@
             const targetPeerId = document.getElementById('remote-peer-id').value.trim() || 
                                 (currentPersona.peerId === PRESET_BURNERS.alpha.peerId ? PRESET_BURNERS.beta.peerId : PRESET_BURNERS.alpha.peerId);
 
-            if (!activeConn || !activeConn.open) {
+            if (!activeConn || (!activeConn.open && !activeConn.peer)) {
                 activateFallbackConnection(targetPeerId);
             }
 
@@ -624,7 +628,12 @@
             };
 
             // Send payload across active connection/channel
-            activeConn.send(payload);
+            try {
+                activeConn.send(payload);
+            } catch(err) {
+                activateFallbackConnection(targetPeerId);
+                activeConn.send(payload);
+            }
 
             // Render locally
             renderMessage("You", text, true, autoDestructSeconds, pendingFile);
