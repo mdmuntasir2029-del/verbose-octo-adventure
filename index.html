@@ -399,24 +399,36 @@
 
     <!-- Application Script -->
     <script>
-        // Pre-configured Burner Profiles
+        // Utility to generate a cryptographic random string
+        function generateRandomSessionId(prefix = 'ghostmesh', length = 12) {
+            const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            const randomValues = new Uint8Array(length);
+            window.crypto.getRandomValues(randomValues);
+            for (let i = 0; i < length; i++) {
+                result += charset[randomValues[i] % charset.length];
+            }
+            return `${prefix}-${result}`;
+        }
+
+        // Pre-configured Burner Profiles with dynamic session generation
         const PRESET_BURNERS = {
             alpha: {
-                peerId: "ghostmesh-user-alpha-99x",
+                get peerId() { return generateRandomSessionId('ghostmesh-alpha'); },
                 displayName: "User Alpha",
                 badge: "Burner 1",
-                seed: "alpha-wolf-shadow-cipher-matrix-99"
+                seed: "alpha-wolf-shadow-cipher-matrix-" + Math.floor(Math.random() * 10000)
             },
             beta: {
-                peerId: "ghostmesh-user-beta-88y",
+                get peerId() { return generateRandomSessionId('ghostmesh-beta'); },
                 displayName: "User Beta",
                 badge: "Burner 2",
-                seed: "beta-falcon-echo-stealth-nexus-88"
+                seed: "beta-falcon-echo-stealth-nexus-" + Math.floor(Math.random() * 10000)
             }
         };
 
         // Application State
-        let currentPersona = PRESET_BURNERS.alpha;
+        let currentPersona = null;
         let peer = null;
         let activeConn = null;
         let autoDestructSeconds = 0;
@@ -430,13 +442,8 @@
             const targetPeer = urlParams.get('peer');
             
             if (targetPeer) {
-                // If opening a target peer link, avoid ID collision by creating or assigning a distinct joining persona
-                if (targetPeer === PRESET_BURNERS.alpha.peerId) {
-                    loadPresetBurner('beta', targetPeer);
-                } else {
-                    // For custom link target, default local persona to Alpha and auto-populate target
-                    loadPresetBurner('alpha', targetPeer);
-                }
+                // If joining via direct link, generate recipient session persona
+                loadPresetBurner('beta', targetPeer);
             } else {
                 loadPresetBurner('alpha', null);
             }
@@ -452,22 +459,22 @@
                     if (data && data.recipientId === currentPersona.peerId) {
                         handleIncomingData(data);
                     }
-                };
-            } catch (e) {
-                console.warn("BroadcastChannel not available:", e);
-            }
-        }
-
-        // Load Preset Profile
+        // Load Preset Profile with unique randomized session identifier
         function loadPresetBurner(type, targetPeerToConnect = null) {
-            currentPersona = PRESET_BURNERS[type];
+            const preset = PRESET_BURNERS[type];
+            currentPersona = {
+                peerId: preset.peerId,
+                displayName: preset.displayName,
+                badge: preset.badge,
+                seed: preset.seed
+            };
             
             document.getElementById('btn-preset-alpha').className = type === 'alpha' 
                 ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
                 : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
 
             document.getElementById('btn-preset-beta').className = type === 'beta' 
-                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition'
+                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
                 : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
 
             updateProfileUI();
