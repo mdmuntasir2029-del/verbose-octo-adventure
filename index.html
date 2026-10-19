@@ -429,10 +429,14 @@
             const urlParams = new URLSearchParams(window.location.search);
             const targetPeer = urlParams.get('peer');
             
-            // Default to 'alpha' unless opening a link meant to connect to an existing peer
             if (targetPeer) {
-                // If a target peer is provided via URL (e.g. Incognito), switch to 'beta' profile automatically to avoid ID collision
-                loadPresetBurner('beta', targetPeer);
+                // If opening a target peer link, avoid ID collision by creating or assigning a distinct joining persona
+                if (targetPeer === PRESET_BURNERS.alpha.peerId) {
+                    loadPresetBurner('beta', targetPeer);
+                } else {
+                    // For custom link target, default local persona to Alpha and auto-populate target
+                    loadPresetBurner('alpha', targetPeer);
+                }
             } else {
                 loadPresetBurner('alpha', null);
             }
@@ -467,6 +471,12 @@
                 : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
 
             updateProfileUI();
+            
+            // Auto fill remote peer ID if provided
+            if (targetPeerToConnect) {
+                document.getElementById('remote-peer-id').value = targetPeerToConnect;
+            }
+
             initPeerJS(targetPeerToConnect);
         }
 
