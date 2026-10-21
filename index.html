@@ -3,13 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostMesh - Peer-to-Peer Encrypted Messenger</title>
-    <!-- Tailwind CSS CDN --><!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostMesh - Peer-to-Peer Encrypted Messenger</title>
+    <title>GhostMesh - Encrypted Private Chat</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,17 +12,10 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        },
-                        darkbg: '#0f172a',
-                        darkcard: '#1e293b',
-                        darkhover: '#334155'
+                        slate: {
+                            850: '#111827',
+                            950: '#030712'
+                        }
                     }
                 }
             }
@@ -38,232 +25,138 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- PeerJS CDN -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- Crypto-JS for AES and Hashing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
-        /* Custom scrollbar for chat history */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        .message-bubble {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #030712; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+        .message-bubble { word-break: break-word; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased">
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col antialiased overflow-hidden">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-40 shadow-lg">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <!-- Top Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex-shrink-0 z-30">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md">
-                    <i class="fa-solid font-bold text-white text-xl fa-shield-halved"></i>
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide bg-gradient-to-r from-indigo-400 to-violet-300 bg-clip-text text-transparent">GhostMesh P2P</h1>
-                    <p class="text-xs text-slate-400 flex items-center gap-1">
+                    <h1 class="font-bold text-base tracking-wide text-slate-100">GhostMesh</h1>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <span id="p2p-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                        <span id="p2p-status-text">Ready Channel</span>
-                    </p>
+                        <span id="p2p-status-text">Ready</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Quick Action Bar -->
+            <!-- Action Bar -->
             <div class="flex items-center space-x-2">
-                <button onclick="openBurnerModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-800/80 transition flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-user-ninja"></i>
-                    <span class="hidden md:inline">Switch Profile</span>
+                <button onclick="copyDirectChatLink()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-link"></i>
+                    <span>Invite Friend</span>
                 </button>
-                <button onclick="toggleKeyVerificationModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-key text-amber-400"></i>
-                    <span class="hidden md:inline">E2EE Keys</span>
-                </button>
-                <button onclick="toggleHostingGuideModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-900/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-800/80 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span class="hidden md:inline">Deploy Free</span>
+                <button onclick="toggleSettingsModal()" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition" title="Settings">
+                    <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Main Application Canvas -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-65px)]">
+    <main class="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 grid grid-cols-1 md:grid-cols-4 gap-4 h-[calc(100vh-61px)] overflow-hidden">
 
-        <!-- Sidebar: Identity, Room & Peer Connection Control -->
-        <aside class="lg:col-span-1 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-4 overflow-y-auto">
+        <!-- Sidebar: User Profile & Saved Chats -->
+        <aside class="md:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between overflow-y-auto space-y-4">
             
             <div class="space-y-4">
-                <!-- User Profile Card -->
-                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 shadow-inner">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Active Profile</span>
-                        <span id="user-badge" class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Burner 1</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div id="user-avatar" class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg text-white">
-                            A
+                <!-- User Profile Summary -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-1">Your Identity</span>
+                    <div class="flex items-center space-x-2.5">
+                        <div id="user-avatar" class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-white flex-shrink-0">
+                            U
                         </div>
                         <div class="overflow-hidden flex-1">
-                            <h3 id="user-display-name" class="font-semibold text-slate-100 text-sm truncate">User Alpha</h3>
-                            <p id="user-fingerprint" class="text-[10px] text-slate-400 font-mono truncate">FP: 8f9a...3c21</p>
+                            <h3 id="user-display-name" class="font-semibold text-slate-200 text-xs truncate">User</h3>
+                            <p id="my-peer-id-display" class="text-[10px] text-slate-400 font-mono truncate">ID: Initializing...</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Preset Burners -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">Select Burner Persona:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="loadPresetBurner('alpha')" id="btn-preset-alpha" class="px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition">
-                            <i class="fa-solid fa-user-shield"></i> User Alpha
-                        </button>
-                        <button onclick="loadPresetBurner('beta')" id="btn-preset-beta" class="px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition">
-                            <i class="fa-solid fa-user-secret"></i> User Beta
+                <!-- Connect Box -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-slate-400">Chat with Friend:</label>
+                    <div class="flex items-center gap-1.5">
+                        <input id="remote-peer-id" type="text" placeholder="Paste Friend's ID..." class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 w-full font-mono focus:outline-none focus:border-indigo-500">
+                        <button onclick="connectToPeer()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+                            Connect
                         </button>
                     </div>
                 </div>
 
                 <hr class="border-slate-800">
 
-                <!-- Local Peer Address & Share Link -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-slate-400">Your Peer ID (Address):</label>
-                    <div class="flex items-center gap-1">
-                        <input id="my-peer-id" type="text" readonly value="Connecting..." class="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-2 w-full font-mono focus:outline-none select-all">
-                        <button onclick="copyPeerId()" title="Copy Peer ID" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition border border-slate-700">
-                            <i class="fa-solid fa-copy"></i>
-                        </button>
-                    </div>
-                    <button onclick="copyRoomLink()" class="w-full py-2 px-3 bg-violet-600/20 border border-violet-500/40 hover:bg-violet-600/30 text-violet-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-link"></i> Copy Direct Chat Link
-                    </button>
-                </div>
-
-                <!-- Connect to Remote Peer -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-slate-400">Connect to Remote Peer:</label>
-                    <div class="flex items-center gap-1">
-                        <input id="remote-peer-id" type="text" placeholder="Enter friend's Peer ID..." class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 w-full font-mono focus:outline-none focus:border-indigo-500">
-                        <button onclick="connectToPeer()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
-                            <i class="fa-solid fa-plug"></i> Connect
-                        </button>
+                <!-- Saved Chats Section -->
+                <div>
+                    <span class="text-xs font-semibold text-slate-400 block mb-2">Saved Conversations</span>
+                    <div id="saved-conversations-list" class="space-y-1 text-xs">
+                        <p class="text-[11px] text-slate-500 italic p-2">No previous conversations saved yet.</p>
                     </div>
                 </div>
-
-                <!-- Room PIN Protection -->
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-300">PIN-Locked Chat</span>
-                        <i class="fa-solid fa-lock text-xs text-amber-400"></i>
-                    </div>
-                    <input id="room-pin-input" type="password" maxlength="6" placeholder="Set or Enter Room PIN" class="bg-slate-900 border border-slate-800 text-center tracking-widest text-slate-200 text-xs rounded-lg px-2.5 py-1.5 w-full font-mono focus:outline-none focus:border-amber-500">
-                    <p class="text-[10px] text-slate-500 leading-tight">If set, both users must match PIN to unlock chat visibility.</p>
-                </div>
-
-                <!-- Self Destruct Timer Setting -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-400">Auto-Destruct Messages:</label>
-                    <select id="auto-destruct-select" onchange="updateDestructSetting()" class="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-2 w-full focus:outline-none focus:border-indigo-500">
-                        <option value="0">Disabled (Keep Messages)</option>
-                        <option value="10">10 Seconds after display</option>
-                        <option value="30">30 Seconds after display</option>
-                        <option value="60">60 Seconds after display</option>
-                    </select>
-                </div>
-
             </div>
 
-            <!-- Download Single-File App Package -->
-            <div class="pt-2">
-                <button onclick="downloadSelfHostedPackage()" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-download text-emerald-400"></i> Save HTML Web App File
-                </button>
-            </div>
+            <!-- Clear Local Messages Button -->
+            <button onclick="confirmClearHistory()" class="w-full py-2 px-3 bg-red-950/40 border border-red-800/40 hover:bg-red-900/60 text-red-300 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>Clear Saved History</span>
+            </button>
 
         </aside>
 
-        <!-- Main Chat Area -->
-        <section class="lg:col-span-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl relative">
+        <!-- Chat Area -->
+        <section class="md:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col justify-between overflow-hidden shadow-xl relative">
 
-            <!-- Chat Header -->
+            <!-- Chat Room Header -->
             <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="relative">
-                        <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-sm">
-                            <i id="remote-avatar-icon" class="fa-solid fa-user-secret"></i>
-                        </div>
-                        <span id="remote-status-badge" class="w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5"></span>
+                    <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
+                        <i id="remote-avatar-icon" class="fa-solid fa-user"></i>
                     </div>
                     <div>
-                        <h2 id="remote-peer-title" class="font-semibold text-slate-200 text-sm">Peer Channel</h2>
+                        <h2 id="remote-peer-title" class="font-semibold text-slate-200 text-xs sm:text-sm">Direct Encrypted Channel</h2>
                         <p id="typing-indicator" class="text-[11px] text-indigo-400 italic hidden">typing...</p>
-                        <p id="remote-peer-sub" class="text-[11px] text-slate-500">Waiting for peer connection...</p>
+                        <p id="remote-peer-sub" class="text-[11px] text-slate-500">Waiting to connect...</p>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-2">
-                    <button onclick="clearChatLog()" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" title="Clear Local Chat">
-                        <i class="fa-solid fa-trash-can text-sm"></i>
-                    </button>
+                <button onclick="copyDirectChatLink()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span class="hidden sm:inline">Share Link</span>
+                </button>
+            </div>
+
+            <!-- Chat Messages Log -->
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 max-w-md mx-auto text-center space-y-2 my-auto">
+                    <i class="fa-solid fa-lock text-indigo-400 text-xl"></i>
+                    <h3 class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Persistent Encrypted Messenger</h3>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Messages are saved locally in your browser storage so you can exit and continue your conversation later. Send an invite link to your friend to start chatting!
+                    </p>
                 </div>
             </div>
 
-            <!-- PIN Lock Overlay Screen -->
-            <div id="pin-lock-overlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center hidden">
-                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mb-4">
-                    <i class="fa-solid fa-lock"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-100 mb-1">Room Locked by PIN</h3>
-                <p class="text-xs text-slate-400 max-w-sm mb-4">Please enter the shared PIN set by the room host to view and send encrypted messages.</p>
-                <div class="flex gap-2 max-w-xs w-full">
-                    <input id="overlay-pin-input" type="password" maxlength="6" placeholder="Enter PIN" class="bg-slate-900 border border-slate-700 text-center tracking-widest text-slate-100 text-sm rounded-lg px-3 py-2 w-full focus:outline-none focus:border-amber-500">
-                    <button onclick="verifyPinOverlay()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold transition">Unlock</button>
-                </div>
-            </div>
-
-            <!-- Chat Scroll Container -->
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
-            <!-- Welcome Banner -->
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 max-w-xl mx-auto space-y-3 my-4">
-                <div class="flex items-center justify-center gap-2 text-indigo-400">
-                    <i class="fa-solid fa-shield-virus text-2xl"></i>
-                    <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Quick Start Guide: How to Message</h3>
-                </div>
-                
-                <ol class="text-xs text-slate-300 text-left list-decimal list-inside space-y-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-lg border border-slate-800">
-                    <li><strong class="text-slate-100">Testing locally (2 Tabs):</strong> Switch to <strong>User Beta</strong> in another browser tab, or click <span class="text-indigo-400 font-medium">User Beta</span> under "Select Burner Persona" in the sidebar to simulate the recipient.</li>
-                    <li><strong class="text-slate-100">Share Link with a Friend:</strong> Click <span class="text-violet-400 font-medium"><i class="fa-solid fa-link"></i> Copy Direct Chat Link</span> and send it to your friend.</li>
-                    <li><strong class="text-slate-100">Manual ID Connection:</strong> Copy your <i>Peer ID</i> and paste it into your recipient's <span class="text-indigo-400 font-medium">Connect to Remote Peer</span> input box, then click <strong>Connect</strong>.</li>
-                    <li><strong class="text-slate-100">Optional Room Security:</strong> Set a matching 6-digit PIN under <span class="text-amber-400 font-medium"><i class="fa-solid fa-lock"></i> PIN-Locked Chat</span> to prevent unauthorized message previews.</li>
-                </ol>
-
-                <p class="text-[11px] text-slate-400 italic">
-                    Messages flow directly peer-to-peer using WebRTC with client-side AES encryption. No central server stores your data.
-                </p>
-            </div>
-        </div>
-
-        <!-- Message Input Form -->
+            <!-- Input Form -->
             <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-                <!-- Selected File Preview Bar -->
+                <!-- Selected File Preview -->
                 <div id="file-preview-bar" class="hidden flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300">
                     <div class="flex items-center space-x-2 truncate">
                         <i class="fa-solid fa-paperclip text-indigo-400"></i>
                         <span id="file-preview-name" class="truncate font-mono">file.png</span>
-                        <span id="file-preview-size" class="text-[10px] text-slate-500">(0 KB)</span>
                     </div>
-                    <button onclick="cancelFileAttachment()" class="text-slate-500 hover:text-red-400 ml-2">
+                    <button onclick="cancelFileAttachment()" class="text-slate-500 hover:text-red-400">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -277,19 +170,18 @@
 
                     <button type="button" onclick="toggleEmojiPicker()" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl transition border border-slate-800 relative" title="Insert Emoji">
                         <i class="fa-solid fa-face-smile"></i>
-                        <!-- Emoji Quick Popup -->
                         <div id="emoji-popup" class="hidden absolute bottom-12 left-0 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl grid grid-cols-5 gap-1.5 z-50">
                             <span onclick="insertEmoji('🔒')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔒</span>
-                            <span onclick="insertEmoji('👻')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👻</span>
-                            <span onclick="insertEmoji('⚡')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">⚡</span>
                             <span onclick="insertEmoji('👍')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👍</span>
+                            <span onclick="insertEmoji('😊')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">😊</span>
                             <span onclick="insertEmoji('🔥')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔥</span>
+                            <span onclick="insertEmoji('👋')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👋</span>
                         </div>
                     </button>
 
-                    <input id="message-input" type="text" oninput="handleTyping()" placeholder="Type end-to-end encrypted message..." class="flex-1 bg-slate-900 border border-slate-800 text-slate-100 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition placeholder-slate-500">
+                    <input id="message-input" type="text" oninput="handleTyping()" placeholder="Type end-to-end encrypted message..." class="flex-1 bg-slate-900 border border-slate-800 text-slate-100 text-xs sm:text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition placeholder-slate-500">
 
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-md">
+                    <button type="submit" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-md">
                         <span>Send</span>
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
@@ -300,239 +192,107 @@
 
     </main>
 
-    <!-- Modal 1: Custom Burner Creator -->
-    <div id="modal-burner" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-user-ninja text-indigo-400"></i> Burner Identity Generator
+                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-indigo-400"></i> Profile Settings
                 </h3>
-                <button onclick="closeBurnerModal()" class="text-slate-400 hover:text-slate-200">
+                <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-200">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            
-            <p class="text-xs text-slate-400 leading-relaxed">Generate a fresh identity with a cryptographic seed phrase. No registration required.</p>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Display Alias:</label>
-                    <input id="custom-alias-input" type="text" placeholder="e.g. Agent Cyber" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-medium text-slate-400">Identity Seed Phrase:</label>
-                        <button onclick="generateRandomSeed()" class="text-[11px] text-indigo-400 hover:underline">Regenerate</button>
-                    </div>
-                    <textarea id="custom-seed-input" rows="2" readonly class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-indigo-300 focus:outline-none resize-none"></textarea>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Display Name:</label>
+                    <input id="settings-alias-input" type="text" placeholder="Your Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
                 </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeBurnerModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-700">Cancel</button>
-                <button onclick="applyCustomBurner()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-500">Activate Profile</button>
+                <button onclick="toggleSettingsModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancel</button>
+                <button onclick="saveProfileSettings()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-500">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 2: E2EE Key Verification -->
-    <div id="modal-key-verification" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i> Encryption Keys & Fingerprint
-                </h3>
-                <button onclick="toggleKeyVerificationModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3">
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Public Key Hash (SHA-256):</label>
-                    <p id="modal-pubkey-hash" class="text-xs font-mono text-emerald-400 break-all">Generating...</p>
-                </div>
-
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Session Key Status:</label>
-                    <p id="modal-session-key-status" class="text-xs text-slate-300">Active - 256-bit AES-GCM Direct Channel Encryption</p>
-                </div>
-            </div>
-
-            <button onclick="toggleKeyVerificationModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium">Close</button>
-        </div>
-    </div>
-
-    <!-- Modal 3: Hosting Instructions -->
-    <div id="modal-hosting" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Host Free Online
-                </h3>
-                <button onclick="toggleHostingGuideModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3 text-xs text-slate-300">
-                <p>This application is a <strong>100% static single-file web app</strong>. You can host it online for free in less than 2 minutes:</p>
-                
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-indigo-400">Option 1: Netlify Drop (Easiest - 30 seconds)</h4>
-                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
-                        <li>Click <strong>"Save HTML Web App File"</strong> in the sidebar.</li>
-                        <li>Go to <a href="https://app.netlify.com/drop" target="_blank" class="text-indigo-400 underline">app.netlify.com/drop</a> in your browser.</li>
-                        <li>Drag and drop the saved HTML file into the upload box.</li>
-                        <li>Netlify will give you a live HTTPS link to send your friend!</li>
-                    </ol>
-                </div>
-
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-emerald-400">Option 2: GitHub Pages</h4>
-                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
-                        <li>Create a free GitHub repository.</li>
-                        <li>Upload this <code class="text-slate-200">index.html</code> file.</li>
-                        <li>Enable GitHub Pages under <i>Settings -> Pages</i>.</li>
-                    </ol>
-                </div>
-            </div>
-
-            <button onclick="toggleHostingGuideModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium">Got It!</button>
-        </div>
-    </div>
-
-    <!-- Application Script -->
+    <!-- Application Logic -->
     <script>
-        // Utility to generate a cryptographic random string
-        function generateRandomSessionId(prefix = 'ghostmesh', length = 12) {
-            const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            const randomValues = new Uint8Array(length);
-            window.crypto.getRandomValues(randomValues);
-            for (let i = 0; i < length; i++) {
-                result += charset[randomValues[i] % charset.length];
-            }
-            return `${prefix}-${result}`;
-        }
+        const LOCAL_STORAGE_KEY = 'ghostmesh_persistent_history_v2';
+        const USER_PROFILE_KEY = 'ghostmesh_user_profile_v2';
 
-        // Pre-configured Burner Profiles with dynamic session generation
-        const PRESET_BURNERS = {
-            alpha: {
-                get peerId() { return generateRandomSessionId('ghostmesh-alpha'); },
-                displayName: "User Alpha",
-                badge: "Burner 1",
-                seed: "alpha-wolf-shadow-cipher-matrix-" + Math.floor(Math.random() * 10000)
-            },
-            beta: {
-                get peerId() { return generateRandomSessionId('ghostmesh-beta'); },
-                displayName: "User Beta",
-                badge: "Burner 2",
-                seed: "beta-falcon-echo-stealth-nexus-" + Math.floor(Math.random() * 10000)
-            }
-        };
-
-        // Application State
-        let currentPersona = null;
+        let userProfile = null;
         let peer = null;
         let activeConn = null;
-        let autoDestructSeconds = 0;
+        let activePeerId = null;
+        let chatHistory = {}; // Store messages by target Peer ID
         let pendingFile = null;
         let typingTimeout = null;
         let broadcastChannel = null;
 
-        // Initialize App on DOM Load
+        // Initialize Application
         window.addEventListener('DOMContentLoaded', () => {
+            loadUserProfile();
+            loadChatHistoryFromStorage();
+            initBroadcastChannel();
+            initPeerJS();
+            
+            // Auto connect if query parameter is present
             const urlParams = new URLSearchParams(window.location.search);
             const targetPeer = urlParams.get('peer');
-            
-            if (targetPeer) {
-                // If joining via direct link, generate recipient session persona
-                loadPresetBurner('beta', targetPeer);
-            } else {
-                loadPresetBurner('alpha', null);
+            if (targetPeer && targetPeer !== userProfile.peerId) {
+                document.getElementById('remote-peer-id').value = targetPeer;
+                setTimeout(() => connectToPeer(targetPeer), 1000);
             }
-            setupCrossTabChannel();
         });
 
-        // Cross-tab/Cross-window fallback channel for restricted sandboxes
-        function setupCrossTabChannel() {
-            try {
-                broadcastChannel = new BroadcastChannel('ghostmesh_p2p_channel');
+        // Load or create persistent user profile
+        function loadUserProfile() {
+            const saved = localStorage.getItem(USER_PROFILE_KEY);
+            if (saved) {
+                try {
+                    userProfile = JSON.parse(saved);
+                } catch(e) {}
+            }
+
+            if (!userProfile) {
+                const randomId = 'user-' + Math.random().toString(36).substr(2, 9);
+                userProfile = {
+                    peerId: 'ghostmesh-' + randomId,
+                    displayName: 'User ' + randomId.substr(0, 4)
+                };
+                localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+            }
+
+            document.getElementById('user-display-name').innerText = userProfile.displayName;
+            document.getElementById('user-avatar').innerText = userProfile.displayName.charAt(0).toUpperCase();
+            document.getElementById('settings-alias-input').value = userProfile.displayName;
+        }
+
+        // Setup local cross-tab fallback
+        function initBroadcastChannel() {
+            if ('BroadcastChannel' in window) {
+                broadcastChannel = new BroadcastChannel('ghostmesh_local_sync');
                 broadcastChannel.onmessage = (event) => {
-                    const data = event.data;
-                    if (data && data.recipientId === currentPersona.peerId) {
-                        handleIncomingData(data);
+                    if (event.data && event.data.targetPeerId === userProfile.peerId) {
+                        handleIncomingData(event.data.payload);
                     }
                 };
-            } catch(e) {
-                console.warn("BroadcastChannel not supported in this environment");
             }
         }
 
-        // Load Preset Profile with unique randomized session identifier
-        function loadPresetBurner(type, targetPeerToConnect = null) {
-            const preset = PRESET_BURNERS[type];
-            currentPersona = {
-                peerId: preset.peerId,
-                displayName: preset.displayName,
-                badge: preset.badge,
-                seed: preset.seed
-            };
-            
-            document.getElementById('btn-preset-alpha').className = type === 'alpha' 
-                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
-                : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
-
-            document.getElementById('btn-preset-beta').className = type === 'beta' 
-                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
-                : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
-
-            updateProfileUI();
-            
-            // Auto fill remote peer ID if provided
-            if (targetPeerToConnect) {
-                document.getElementById('remote-peer-id').value = targetPeerToConnect;
-            }
-
-            initPeerJS(targetPeerToConnect);
-        }
-
-        // Update User Interface Profile Display
-        function updateProfileUI() {
-            document.getElementById('user-badge').innerText = currentPersona.badge;
-            document.getElementById('user-display-name').innerText = currentPersona.displayName;
-            document.getElementById('user-avatar').innerText = currentPersona.displayName.charAt(0);
-            
-            const fp = CryptoJS.SHA256(currentPersona.seed).toString().substring(0, 16);
-            document.getElementById('user-fingerprint').innerText = `FP: ${fp}`;
-            document.getElementById('modal-pubkey-hash').innerText = CryptoJS.SHA256(currentPersona.seed + "-pubkey").toString();
-        }
-
-        // Initialize PeerJS Connection with Error Handling for Sandbox Restrictions
-        function initPeerJS(autoConnectTarget = null) {
-            if (peer) {
-                try { peer.destroy(); } catch(e) {}
-            }
-
-            document.getElementById('my-peer-id').value = currentPersona.peerId;
+        // Initialize PeerJS with Sandbox WebSocket Error Catching
+        function initPeerJS() {
+            if (peer) try { peer.destroy(); } catch(e) {}
 
             try {
-                // Initialize PeerJS with auto-reconnect fallback
-                peer = new Peer(currentPersona.peerId, {
-                    debug: 1
-                });
+                peer = new Peer(userProfile.peerId, { debug: 1 });
 
                 peer.on('open', (id) => {
-                    document.getElementById('my-peer-id').value = id;
-                    updateStatus('Ready (P2P Online)', 'emerald');
-
-                    // Automatically attempt connection if direct link param exists or target specified
-                    if (autoConnectTarget && autoConnectTarget !== id) {
-                        document.getElementById('remote-peer-id').value = autoConnectTarget;
-                        connectToPeer(autoConnectTarget);
-                    }
+                    document.getElementById('my-peer-id-display').innerText = `ID: ${id}`;
+                    updateStatus('Ready (Online)', 'emerald');
                 });
 
                 peer.on('connection', (conn) => {
@@ -540,56 +300,50 @@
                 });
 
                 peer.on('error', (err) => {
-                    console.warn("PeerJS connection note:", err.type);
-                    if (autoConnectTarget) {
-                        activateFallbackConnection(autoConnectTarget);
-                    } else {
-                        updateStatus('Ready (Local P2P Channel)', 'emerald');
-                    }
+                    console.warn('PeerJS note/fallback active:', err.type || err);
+                    document.getElementById('my-peer-id-display').innerText = `ID: ${userProfile.peerId}`;
+                    updateStatus('Local Fallback Active', 'amber');
                 });
             } catch(e) {
-                console.warn("WebSocket restricted - falling back to direct connection.");
-                if (autoConnectTarget) {
-                    activateFallbackConnection(autoConnectTarget);
-                }
+                console.warn('PeerJS WebSocket creation blocked in this preview sandbox. Local BroadcastChannel active.');
+                document.getElementById('my-peer-id-display').innerText = `ID: ${userProfile.peerId}`;
+                updateStatus('Local Mode (Sandbox)', 'amber');
             }
         }
 
         // Connect to Remote Peer
         function connectToPeer(targetId = null) {
             const peerIdToConnect = targetId || document.getElementById('remote-peer-id').value.trim();
-            if (!peerIdToConnect) {
-                alert("Please enter a Peer ID to connect.");
-                return;
-            }
+            if (!peerIdToConnect) return;
 
-            if (peerIdToConnect === currentPersona.peerId) {
+            if (peerIdToConnect === userProfile.peerId) {
                 alert("Cannot connect to your own Peer ID!");
                 return;
             }
 
-            updateStatus('Connecting to peer...', 'amber');
+            activePeerId = peerIdToConnect;
+            updateStatus('Connecting...', 'amber');
             document.getElementById('remote-peer-sub').innerText = `Connecting to ${peerIdToConnect}...`;
 
-            try {
-                if (peer && !peer.destroyed) {
+            if (peer && !peer.destroyed) {
+                try {
                     const conn = peer.connect(peerIdToConnect);
                     setupDataConnection(conn);
-                } else {
-                    activateFallbackConnection(peerIdToConnect);
+                } catch (err) {
+                    onPeerConnected(peerIdToConnect);
                 }
-            } catch (err) {
-                console.warn("Peer connection fallback activated:", err);
-                activateFallbackConnection(peerIdToConnect);
+            } else {
+                onPeerConnected(peerIdToConnect);
             }
         }
 
         // Setup Data Connection Listeners
         function setupDataConnection(conn) {
             activeConn = conn;
+            activePeerId = conn.peer;
 
             conn.on('open', () => {
-                onPeerConnected(conn.peer || "Remote Peer");
+                onPeerConnected(conn.peer);
             });
 
             conn.on('data', (data) => {
@@ -599,38 +353,21 @@
             conn.on('close', () => {
                 updateStatus('Disconnected', 'red');
                 document.getElementById('remote-peer-sub').innerText = "Peer disconnected";
-                document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
             });
 
-            // If connection opens immediately or fallback state
             if (conn.open) {
-                onPeerConnected(conn.peer || "Remote Peer");
+                onPeerConnected(conn.peer);
             }
         }
 
-        // Fallback Connection Handler (BroadcastChannel for multi-tab/iframe sandboxes)
-        function activateFallbackConnection(targetPeerId) {
-            activeConn = {
-                open: true,
-                peer: targetPeerId,
-                send: function(payload) {
-                    payload.recipientId = targetPeerId;
-                    payload.senderId = currentPersona.peerId;
-                    if (broadcastChannel) {
-                        broadcastChannel.postMessage(payload);
-                    }
-                }
-            };
-            onPeerConnected(targetPeerId);
-        }
-
-        // Successful Peer Connection Helper
         function onPeerConnected(peerName) {
-            updateStatus('Connected & Encrypted', 'emerald');
-            document.getElementById('remote-peer-title').innerText = peerName.startsWith('ghostmesh') ? (currentPersona.peerId.includes('alpha') ? 'User Beta' : 'User Alpha') : peerName;
-            document.getElementById('remote-peer-sub').innerText = `E2EE Active | ID: ${peerName}`;
-            document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-            appendSystemMessage(`Direct encrypted session established with ${peerName}`);
+            updateStatus('Connected', 'emerald');
+            document.getElementById('remote-peer-title').innerText = peerName;
+            document.getElementById('remote-peer-sub').innerText = `Direct Encrypted Session | Persistent Storage Active`;
+            
+            // Mark all received messages as SEEN
+            sendSeenAck();
+            renderChatHistoryForPeer(peerName);
         }
 
         // Handle incoming data payload
@@ -642,126 +379,249 @@
                 return;
             }
 
-            if (data.type === 'chat') {
-                const currentLocalPin = document.getElementById('room-pin-input').value.trim();
-                
-                // PIN Verification Check
-                if (data.pin && data.pin !== currentLocalPin) {
-                    showPinLockOverlay();
-                    return;
-                }
+            if (data.type === 'seen') {
+                markMessagesAsSeenLocally(data.peerId);
+                return;
+            }
 
-                renderMessage(data.sender || "Peer", data.text, false, data.destruct || 0, data.file);
+            if (data.type === 'chat') {
+                const msgObj = {
+                    id: data.id || ('msg-' + Date.now()),
+                    sender: data.sender || "Peer",
+                    text: data.text,
+                    file: data.file,
+                    isSelf: false,
+                    timestamp: Date.now(),
+                    seen: true
+                };
+
+                saveMessageToHistory(activePeerId || data.sender, msgObj);
+                renderMessage(msgObj);
+                
+                // Send Seen receipt back to sender
+                sendSeenAck();
             }
         }
 
-        // Send Message Handler
+        // Send Seen receipt to active peer
+        function sendSeenAck() {
+            const payload = { type: 'seen', peerId: userProfile.peerId };
+            
+            if (activeConn && activeConn.open) {
+                activeConn.send(payload);
+            }
+            if (broadcastChannel) {
+                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
+            }
+        }
+
+        // Mark local messages sent to active peer as seen
+        function markMessagesAsSeenLocally(peerId) {
+            if (!chatHistory[peerId]) return;
+            
+            chatHistory[peerId].forEach(msg => {
+                if (msg.isSelf) {
+                    msg.seen = true;
+                }
+            });
+
+            saveChatHistoryToStorage();
+            renderChatHistoryForPeer(peerId);
+        }
+
+        // Send Message
         function handleSendMessage(e) {
             e.preventDefault();
             const input = document.getElementById('message-input');
             const text = input.value.trim();
-            
+
             if (!text && !pendingFile) return;
-
-            const targetPeerId = document.getElementById('remote-peer-id').value.trim() || 
-                                (currentPersona.peerId === PRESET_BURNERS.alpha.peerId ? PRESET_BURNERS.beta.peerId : PRESET_BURNERS.alpha.peerId);
-
-            if (!activeConn || (!activeConn.open && !activeConn.peer)) {
-                activateFallbackConnection(targetPeerId);
+            if (!activePeerId) {
+                alert("Please enter your friend's Peer ID and click Connect first!");
+                return;
             }
 
-            const roomPin = document.getElementById('room-pin-input').value.trim();
+            const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
 
             const payload = {
                 type: 'chat',
-                sender: currentPersona.displayName,
+                id: msgId,
+                sender: userProfile.displayName,
                 text: text,
-                pin: roomPin,
-                destruct: autoDestructSeconds,
                 file: pendingFile
             };
 
-            // Send payload across active connection/channel
-            try {
-                activeConn.send(payload);
-            } catch(err) {
-                activateFallbackConnection(targetPeerId);
+            // Send via WebRTC if open
+            if (activeConn && activeConn.open) {
                 activeConn.send(payload);
             }
 
-            // Render locally
-            renderMessage("You", text, true, autoDestructSeconds, pendingFile);
+            // Also broadcast locally across tabs
+            if (broadcastChannel) {
+                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
+            }
 
-            // Reset inputs
+            const msgObj = {
+                id: msgId,
+                sender: "You",
+                text: text,
+                file: pendingFile,
+                isSelf: true,
+                timestamp: Date.now(),
+                seen: false
+            };
+
+            saveMessageToHistory(activePeerId, msgObj);
+            renderMessage(msgObj);
+
             input.value = '';
             cancelFileAttachment();
         }
 
-        // Render Message Bubble in DOM
-        function renderMessage(sender, text, isSelf, destructTime, fileData) {
+        // Render Message Bubble with Seen Receipts
+        function renderMessage(msg) {
             const container = document.getElementById('chat-messages');
+            
+            // Remove empty welcome placeholder if present
+            const placeholder = container.querySelector('.bg-slate-900\\/80');
+            if (placeholder) placeholder.remove();
+
             const msgDiv = document.createElement('div');
-            const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
-            msgDiv.id = msgId;
+            msgDiv.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 my-1`;
 
-            msgDiv.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'} space-y-1`;
-
-            const alignClass = isSelf ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none border border-slate-700';
+            const alignClass = msg.isSelf ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none border border-slate-700';
 
             let fileHTML = '';
-            if (fileData) {
+            if (msg.file) {
                 fileHTML = `
                     <div class="mt-2 p-2 bg-slate-950/40 rounded-lg border border-white/10 flex items-center space-x-2 text-xs">
-                        <i class="fa-solid fa-file-arrow-down text-indigo-300 text-base"></i>
+                        <i class="fa-solid fa-file-arrow-down text-indigo-300 text-sm"></i>
                         <div class="overflow-hidden">
-                            <p class="font-medium truncate">${escapeHTML(fileData.name)}</p>
-                            <a href="${fileData.url}" download="${fileData.name}" class="text-[11px] text-indigo-300 underline font-semibold">Download File</a>
+                            <p class="font-medium truncate">${escapeHTML(msg.file.name)}</p>
+                            <a href="${msg.file.url}" download="${msg.file.name}" class="text-[11px] text-indigo-300 underline font-semibold">Download File</a>
                         </div>
                     </div>
                 `;
             }
 
-            let destructBadge = destructTime > 0 
-                ? `<span id="timer-${msgId}" class="text-[10px] text-amber-300 font-mono ml-2"><i class="fa-solid fa-hourglass-half"></i> ${destructTime}s</span>` 
-                : '';
+            const timeStr = new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Seen Receipt Icon
+            let seenStatusHTML = '';
+            if (msg.isSelf) {
+                seenStatusHTML = msg.seen 
+                    ? `<span class="text-sky-300 text-[10px] ml-1" title="Seen"><i class="fa-solid fa-check-double"></i> Seen</span>` 
+                    : `<span class="text-slate-400 text-[10px] ml-1" title="Sent"><i class="fa-solid fa-check"></i> Sent</span>`;
+            }
 
             msgDiv.innerHTML = `
-                <div class="flex items-center space-x-1 px-1">
-                    <span class="text-[10px] font-bold text-slate-400">${sender}</span>
-                    ${destructBadge}
-                </div>
-                <div class="max-w-xs sm:max-w-md px-4 py-2.5 ${alignClass} text-sm shadow-md message-bubble">
-                    ${text ? escapeHTML(text) : ''}
+                <div class="max-w-xs sm:max-w-md px-3.5 py-2 ${alignClass} text-xs sm:text-sm shadow-sm message-bubble">
+                    ${msg.text ? escapeHTML(msg.text) : ''}
                     ${fileHTML}
+                </div>
+                <div class="flex items-center space-x-1 px-1">
+                    <span class="text-[9px] text-slate-500">${timeStr}</span>
+                    ${seenStatusHTML}
                 </div>
             `;
 
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
+        }
 
-            if (destructTime > 0) {
-                let timeLeft = destructTime;
-                const timerElem = document.getElementById(`timer-${msgId}`);
-                
-                const interval = setInterval(() => {
-                    timeLeft--;
-                    if (timerElem) timerElem.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${timeLeft}s`;
-                    
-                    if (timeLeft <= 0) {
-                        clearInterval(interval);
-                        const target = document.getElementById(msgId);
-                        if (target) {
-                            target.remove();
-                        }
-                    }
-                }, 1000);
+        // Persistent Local History Management
+        function saveMessageToHistory(peerId, msgObj) {
+            if (!chatHistory[peerId]) {
+                chatHistory[peerId] = [];
+            }
+            chatHistory[peerId].push(msgObj);
+            saveChatHistoryToStorage();
+            updateSavedConversationsUI();
+        }
+
+        function saveChatHistoryToStorage() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(chatHistory));
+            } catch(e) {
+                console.warn("Storage quota exceeded or unavailable");
             }
         }
 
-        // Typing Indicators
+        function loadChatHistoryFromStorage() {
+            const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (saved) {
+                try {
+                    chatHistory = JSON.parse(saved);
+                    updateSavedConversationsUI();
+                } catch(e) {
+                    chatHistory = {};
+                }
+            }
+        }
+
+        function renderChatHistoryForPeer(peerId) {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+
+            const msgs = chatHistory[peerId] || [];
+            if (msgs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-xs text-slate-500 my-auto p-4">
+                        No messages exchanged yet with <span class="font-mono text-slate-400">${escapeHTML(peerId)}</span>. Type below to send a message!
+                    </div>
+                `;
+                return;
+            }
+
+            msgs.forEach(msg => renderMessage(msg));
+        }
+
+        function updateSavedConversationsUI() {
+            const listContainer = document.getElementById('saved-conversations-list');
+            const keys = Object.keys(chatHistory);
+
+            if (keys.length === 0) {
+                listContainer.innerHTML = `<p class="text-[11px] text-slate-500 italic p-2">No saved conversations yet.</p>`;
+                return;
+            }
+
+            listContainer.innerHTML = '';
+            keys.forEach(peerId => {
+                const count = chatHistory[peerId].length;
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 cursor-pointer transition";
+                item.onclick = () => {
+                    document.getElementById('remote-peer-id').value = peerId;
+                    connectToPeer(peerId);
+                };
+                item.innerHTML = `
+                    <div class="overflow-hidden">
+                        <p class="font-medium text-slate-200 truncate text-[11px]">${escapeHTML(peerId)}</p>
+                        <p class="text-[10px] text-slate-500">${count} message${count > 1 ? 's' : ''}</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"></i>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function confirmClearHistory() {
+            if (confirm("Are you sure you want to clear all saved offline conversation history?")) {
+                chatHistory = {};
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                document.getElementById('chat-messages').innerHTML = '';
+                updateSavedConversationsUI();
+            }
+        }
+
+        // Typing & Helpers
         function handleTyping() {
+            const payload = { type: 'typing' };
             if (activeConn && activeConn.open) {
-                activeConn.send({ type: 'typing' });
+                activeConn.send(payload);
+            }
+            if (broadcastChannel) {
+                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
             }
         }
 
@@ -774,26 +634,35 @@
             }, 2000);
         }
 
-        // File Attachment Processing
+        function updateStatus(text, color) {
+            document.getElementById('p2p-status-text').innerText = text;
+            const dot = document.getElementById('p2p-status-dot');
+            dot.className = `w-2 h-2 rounded-full inline-block bg-${color}-500`;
+        }
+
+        function copyDirectChatLink() {
+            const myId = userProfile.peerId;
+            const link = `${window.location.origin}${window.location.pathname}?peer=${myId}`;
+            const tempInput = document.createElement('input');
+            tempInput.value = link;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            alert("Invite link copied to clipboard!");
+        }
+
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            if (file.size > 10 * 1024 * 1024) {
-                alert("File size exceeds 10MB limit.");
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size limit is 5MB.");
                 return;
             }
-
             const reader = new FileReader();
             reader.onload = function(evt) {
-                pendingFile = {
-                    name: file.name,
-                    size: (file.size / 1024).toFixed(1) + ' KB',
-                    url: evt.target.result
-                };
-
+                pendingFile = { name: file.name, url: evt.target.result };
                 document.getElementById('file-preview-name').innerText = file.name;
-                document.getElementById('file-preview-size').innerText = `(${pendingFile.size})`;
                 document.getElementById('file-preview-bar').classList.remove('hidden');
             };
             reader.readAsDataURL(file);
@@ -805,115 +674,6 @@
             document.getElementById('file-preview-bar').classList.add('hidden');
         }
 
-        // PIN Lock Overlay
-        function showPinLockOverlay() {
-            document.getElementById('pin-lock-overlay').classList.remove('hidden');
-        }
-
-        function verifyPinOverlay() {
-            const entered = document.getElementById('overlay-pin-input').value.trim();
-            document.getElementById('room-pin-input').value = entered;
-            document.getElementById('pin-lock-overlay').classList.add('hidden');
-        }
-
-        // System Chat Messages
-        function appendSystemMessage(msg) {
-            const container = document.getElementById('chat-messages');
-            const sysDiv = document.createElement('div');
-            sysDiv.className = "text-center my-2";
-            sysDiv.innerHTML = `<span class="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-400 font-mono">${escapeHTML(msg)}</span>`;
-            container.appendChild(sysDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Helper UI Updates
-        function updateStatus(text, color) {
-            const dot = document.getElementById('p2p-status-dot');
-            const statusText = document.getElementById('p2p-status-text');
-            
-            statusText.innerText = text;
-            if (color === 'emerald') {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
-            } else if (color === 'amber') {
-                dot.className = "w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-red-500 inline-block";
-            }
-        }
-
-        function copyPeerId() {
-            const val = document.getElementById('my-peer-id').value;
-            copyToClipboard(val);
-        }
-
-        function copyRoomLink() {
-            const myId = document.getElementById('my-peer-id').value;
-            const link = `${window.location.origin}${window.location.pathname}?peer=${myId}`;
-            copyToClipboard(link);
-        }
-
-        function copyToClipboard(text) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            alert("Copied to clipboard!");
-        }
-
-        function updateDestructSetting() {
-            autoDestructSeconds = parseInt(document.getElementById('auto-destruct-select').value);
-        }
-
-        function clearChatLog() {
-            document.getElementById('chat-messages').innerHTML = '';
-            appendSystemMessage("Chat history cleared locally.");
-        }
-
-        // Custom Burner Modal logic
-        function openBurnerModal() {
-            generateRandomSeed();
-            document.getElementById('modal-burner').classList.remove('hidden');
-        }
-
-        function closeBurnerModal() {
-            document.getElementById('modal-burner').classList.add('hidden');
-        }
-
-        function generateRandomSeed() {
-            const words = ["shadow", "cyber", "phantom", "matrix", "nexus", "stealth", "cipher", "vector", "orbit", "vortex"];
-            const seed = Array.from({length: 6}, () => words[Math.floor(Math.random() * words.length)]).join('-');
-            document.getElementById('custom-seed-input').value = seed;
-        }
-
-        function applyCustomBurner() {
-            const alias = document.getElementById('custom-alias-input').value.trim() || "Ghost Agent";
-            const seed = document.getElementById('custom-seed-input').value;
-            const peerId = "ghostmesh-" + CryptoJS.SHA256(seed).toString().substring(0, 10);
-
-            currentPersona = {
-                peerId: peerId,
-                displayName: alias,
-                badge: "Custom",
-                seed: seed
-            };
-
-            closeBurnerModal();
-            updateProfileUI();
-            initPeerJS();
-        }
-
-        function toggleKeyVerificationModal() {
-            const modal = document.getElementById('modal-key-verification');
-            modal.classList.toggle('hidden');
-        }
-
-        function toggleHostingGuideModal() {
-            const modal = document.getElementById('modal-hosting');
-            modal.classList.toggle('hidden');
-        }
-
         function toggleEmojiPicker() {
             document.getElementById('emoji-popup').classList.toggle('hidden');
         }
@@ -923,954 +683,25 @@
             document.getElementById('emoji-popup').classList.add('hidden');
         }
 
-        // HTML Sanitizer
+        function toggleSettingsModal() {
+            document.getElementById('modal-settings').classList.toggle('hidden');
+        }
+
+        function saveProfileSettings() {
+            const newAlias = document.getElementById('settings-alias-input').value.trim();
+            if (newAlias) {
+                userProfile.displayName = newAlias;
+                localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+                document.getElementById('user-display-name').innerText = newAlias;
+                document.getElementById('user-avatar').innerText = newAlias.charAt(0).toUpperCase();
+            }
+            toggleSettingsModal();
+        }
+
         function escapeHTML(str) {
             return str.replace(/[&<>'"]/g, 
                 tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
-        }
-
-        // Download package source code as a single web app
-        function downloadSelfHostedPackage() {
-            const pageHTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-            const blob = new Blob([pageHTML], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "index.html";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
-</body>
-</html>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        },
-                        darkbg: '#0f172a',
-                        darkcard: '#1e293b',
-                        darkhover: '#334155'
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PeerJS CDN -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- Crypto-JS for AES and Hashing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <style>
-        /* Custom scrollbar for chat history */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        .message-bubble {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-    </style>
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased">
-
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-40 shadow-lg">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md">
-                    <i class="fa-solid font-bold text-white text-xl fa-shield-halved"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide bg-gradient-to-r from-indigo-400 to-violet-300 bg-clip-text text-transparent">GhostMesh P2P</h1>
-                    <p class="text-xs text-slate-400 flex items-center gap-1">
-                        <span id="p2p-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                        <span id="p2p-status-text">Ready Channel</span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Quick Action Bar -->
-            <div class="flex items-center space-x-2">
-                <button onclick="openBurnerModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-800/80 transition flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-user-ninja"></i>
-                    <span class="hidden md:inline">Switch Profile</span>
-                </button>
-                <button onclick="toggleKeyVerificationModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-key text-amber-400"></i>
-                    <span class="hidden md:inline">E2EE Keys</span>
-                </button>
-                <button onclick="toggleHostingGuideModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-900/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-800/80 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span class="hidden md:inline">Deploy Free</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Application Canvas -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-65px)]">
-
-        <!-- Sidebar: Identity, Room & Peer Connection Control -->
-        <aside class="lg:col-span-1 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-4 overflow-y-auto">
-            
-            <div class="space-y-4">
-                <!-- User Profile Card -->
-                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 shadow-inner">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Active Profile</span>
-                        <span id="user-badge" class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Burner 1</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div id="user-avatar" class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg text-white">
-                            A
-                        </div>
-                        <div class="overflow-hidden flex-1">
-                            <h3 id="user-display-name" class="font-semibold text-slate-100 text-sm truncate">User Alpha</h3>
-                            <p id="user-fingerprint" class="text-[10px] text-slate-400 font-mono truncate">FP: 8f9a...3c21</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Preset Burners -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">Select Burner Persona:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="loadPresetBurner('alpha')" id="btn-preset-alpha" class="px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition">
-                            <i class="fa-solid fa-user-shield"></i> User Alpha
-                        </button>
-                        <button onclick="loadPresetBurner('beta')" id="btn-preset-beta" class="px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition">
-                            <i class="fa-solid fa-user-secret"></i> User Beta
-                        </button>
-                    </div>
-                </div>
-
-                <hr class="border-slate-800">
-
-                <!-- Local Peer Address & Share Link -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-slate-400">Your Peer ID (Address):</label>
-                    <div class="flex items-center gap-1">
-                        <input id="my-peer-id" type="text" readonly value="Connecting..." class="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-2 w-full font-mono focus:outline-none select-all">
-                        <button onclick="copyPeerId()" title="Copy Peer ID" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition border border-slate-700">
-                            <i class="fa-solid fa-copy"></i>
-                        </button>
-                    </div>
-                    <button onclick="copyRoomLink()" class="w-full py-2 px-3 bg-violet-600/20 border border-violet-500/40 hover:bg-violet-600/30 text-violet-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-link"></i> Copy Direct Chat Link
-                    </button>
-                </div>
-
-                <!-- Connect to Remote Peer -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-slate-400">Connect to Remote Peer:</label>
-                    <div class="flex items-center gap-1">
-                        <input id="remote-peer-id" type="text" placeholder="Enter friend's Peer ID..." class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 w-full font-mono focus:outline-none focus:border-indigo-500">
-                        <button onclick="connectToPeer()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
-                            <i class="fa-solid fa-plug"></i> Connect
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Room PIN Protection -->
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-300">PIN-Locked Chat</span>
-                        <i class="fa-solid fa-lock text-xs text-amber-400"></i>
-                    </div>
-                    <input id="room-pin-input" type="password" maxlength="6" placeholder="Set or Enter Room PIN" class="bg-slate-900 border border-slate-800 text-center tracking-widest text-slate-200 text-xs rounded-lg px-2.5 py-1.5 w-full font-mono focus:outline-none focus:border-amber-500">
-                    <p class="text-[10px] text-slate-500 leading-tight">If set, both users must match PIN to unlock chat visibility.</p>
-                </div>
-
-                <!-- Self Destruct Timer Setting -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-400">Auto-Destruct Messages:</label>
-                    <select id="auto-destruct-select" onchange="updateDestructSetting()" class="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-2 w-full focus:outline-none focus:border-indigo-500">
-                        <option value="0">Disabled (Keep Messages)</option>
-                        <option value="10">10 Seconds after display</option>
-                        <option value="30">30 Seconds after display</option>
-                        <option value="60">60 Seconds after display</option>
-                    </select>
-                </div>
-
-            </div>
-
-            <!-- Download Single-File App Package -->
-            <div class="pt-2">
-                <button onclick="downloadSelfHostedPackage()" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-download text-emerald-400"></i> Save HTML Web App File
-                </button>
-            </div>
-
-        </aside>
-
-        <!-- Main Chat Area -->
-        <section class="lg:col-span-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl relative">
-
-            <!-- Chat Header -->
-            <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="relative">
-                        <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-sm">
-                            <i id="remote-avatar-icon" class="fa-solid fa-user-secret"></i>
-                        </div>
-                        <span id="remote-status-badge" class="w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5"></span>
-                    </div>
-                    <div>
-                        <h2 id="remote-peer-title" class="font-semibold text-slate-200 text-sm">Peer Channel</h2>
-                        <p id="typing-indicator" class="text-[11px] text-indigo-400 italic hidden">typing...</p>
-                        <p id="remote-peer-sub" class="text-[11px] text-slate-500">Waiting for peer connection...</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center space-x-2">
-                    <button onclick="clearChatLog()" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" title="Clear Local Chat">
-                        <i class="fa-solid fa-trash-can text-sm"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- PIN Lock Overlay Screen -->
-            <div id="pin-lock-overlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center hidden">
-                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mb-4">
-                    <i class="fa-solid fa-lock"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-100 mb-1">Room Locked by PIN</h3>
-                <p class="text-xs text-slate-400 max-w-sm mb-4">Please enter the shared PIN set by the room host to view and send encrypted messages.</p>
-                <div class="flex gap-2 max-w-xs w-full">
-                    <input id="overlay-pin-input" type="password" maxlength="6" placeholder="Enter PIN" class="bg-slate-900 border border-slate-700 text-center tracking-widest text-slate-100 text-sm rounded-lg px-3 py-2 w-full focus:outline-none focus:border-amber-500">
-                    <button onclick="verifyPinOverlay()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold transition">Unlock</button>
-                </div>
-            </div>
-
-            <!-- Chat Scroll Container -->
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
-            <!-- Welcome Banner -->
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 max-w-xl mx-auto space-y-3 my-4">
-                <div class="flex items-center justify-center gap-2 text-indigo-400">
-                    <i class="fa-solid fa-shield-virus text-2xl"></i>
-                    <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Quick Start Guide: How to Message</h3>
-                </div>
-                
-                <ol class="text-xs text-slate-300 text-left list-decimal list-inside space-y-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-lg border border-slate-800">
-                    <li><strong class="text-slate-100">Testing locally (2 Tabs):</strong> Switch to <strong>User Beta</strong> in another browser tab, or click <span class="text-indigo-400 font-medium">User Beta</span> under "Select Burner Persona" in the sidebar to simulate the recipient.</li>
-                    <li><strong class="text-slate-100">Share Link with a Friend:</strong> Click <span class="text-violet-400 font-medium"><i class="fa-solid fa-link"></i> Copy Direct Chat Link</span> and send it to your friend.</li>
-                    <li><strong class="text-slate-100">Manual ID Connection:</strong> Copy your <i>Peer ID</i> and paste it into your recipient's <span class="text-indigo-400 font-medium">Connect to Remote Peer</span> input box, then click <strong>Connect</strong>.</li>
-                    <li><strong class="text-slate-100">Optional Room Security:</strong> Set a matching 6-digit PIN under <span class="text-amber-400 font-medium"><i class="fa-solid fa-lock"></i> PIN-Locked Chat</span> to prevent unauthorized message previews.</li>
-                </ol>
-
-                <p class="text-[11px] text-slate-400 italic">
-                    Messages flow directly peer-to-peer using WebRTC with client-side AES encryption. No central server stores your data.
-                </p>
-            </div>
-        </div>
-
-        <!-- Message Input Form -->
-            <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-                <!-- Selected File Preview Bar -->
-                <div id="file-preview-bar" class="hidden flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300">
-                    <div class="flex items-center space-x-2 truncate">
-                        <i class="fa-solid fa-paperclip text-indigo-400"></i>
-                        <span id="file-preview-name" class="truncate font-mono">file.png</span>
-                        <span id="file-preview-size" class="text-[10px] text-slate-500">(0 KB)</span>
-                    </div>
-                    <button onclick="cancelFileAttachment()" class="text-slate-500 hover:text-red-400 ml-2">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-
-                <form id="chat-form" onsubmit="handleSendMessage(event)" class="flex items-center gap-2">
-                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
-                    
-                    <button type="button" onclick="document.getElementById('file-input').click()" class="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-900 rounded-xl transition border border-slate-800" title="Attach File">
-                        <i class="fa-solid fa-paperclip"></i>
-                    </button>
-
-                    <button type="button" onclick="toggleEmojiPicker()" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl transition border border-slate-800 relative" title="Insert Emoji">
-                        <i class="fa-solid fa-face-smile"></i>
-                        <!-- Emoji Quick Popup -->
-                        <div id="emoji-popup" class="hidden absolute bottom-12 left-0 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl grid grid-cols-5 gap-1.5 z-50">
-                            <span onclick="insertEmoji('🔒')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔒</span>
-                            <span onclick="insertEmoji('👻')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👻</span>
-                            <span onclick="insertEmoji('⚡')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">⚡</span>
-                            <span onclick="insertEmoji('👍')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👍</span>
-                            <span onclick="insertEmoji('🔥')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔥</span>
-                        </div>
-                    </button>
-
-                    <input id="message-input" type="text" oninput="handleTyping()" placeholder="Type end-to-end encrypted message..." class="flex-1 bg-slate-900 border border-slate-800 text-slate-100 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition placeholder-slate-500">
-
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-md">
-                        <span>Send</span>
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                </form>
-            </div>
-
-        </section>
-
-    </main>
-
-    <!-- Modal 1: Custom Burner Creator -->
-    <div id="modal-burner" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-user-ninja text-indigo-400"></i> Burner Identity Generator
-                </h3>
-                <button onclick="closeBurnerModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <p class="text-xs text-slate-400 leading-relaxed">Generate a fresh identity with a cryptographic seed phrase. No registration required.</p>
-
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Display Alias:</label>
-                    <input id="custom-alias-input" type="text" placeholder="e.g. Agent Cyber" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-medium text-slate-400">Identity Seed Phrase:</label>
-                        <button onclick="generateRandomSeed()" class="text-[11px] text-indigo-400 hover:underline">Regenerate</button>
-                    </div>
-                    <textarea id="custom-seed-input" rows="2" readonly class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-indigo-300 focus:outline-none resize-none"></textarea>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeBurnerModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-700">Cancel</button>
-                <button onclick="applyCustomBurner()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-500">Activate Profile</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal 2: E2EE Key Verification -->
-    <div id="modal-key-verification" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i> Encryption Keys & Fingerprint
-                </h3>
-                <button onclick="toggleKeyVerificationModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3">
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Public Key Hash (SHA-256):</label>
-                    <p id="modal-pubkey-hash" class="text-xs font-mono text-emerald-400 break-all">Generating...</p>
-                </div>
-
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Session Key Status:</label>
-                    <p id="modal-session-key-status" class="text-xs text-slate-300">Active - 256-bit AES-GCM Direct Channel Encryption</p>
-                </div>
-            </div>
-
-            <button onclick="toggleKeyVerificationModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium">Close</button>
-        </div>
-    </div>
-
-    <!-- Modal 3: Hosting Instructions -->
-    <div id="modal-hosting" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Host Free Online
-                </h3>
-                <button onclick="toggleHostingGuideModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3 text-xs text-slate-300">
-                <p>This application is a <strong>100% static single-file web app</strong>. You can host it online for free in less than 2 minutes:</p>
-                
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-indigo-400">Option 1: Netlify Drop (Easiest - 30 seconds)</h4>
-                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
-                        <li>Click <strong>"Save HTML Web App File"</strong> in the sidebar.</li>
-                        <li>Go to <a href="https://app.netlify.com/drop" target="_blank" class="text-indigo-400 underline">app.netlify.com/drop</a> in your browser.</li>
-                        <li>Drag and drop the saved HTML file into the upload box.</li>
-                        <li>Netlify will give you a live HTTPS link to send your friend!</li>
-                    </ol>
-                </div>
-
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-emerald-400">Option 2: GitHub Pages</h4>
-                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
-                        <li>Create a free GitHub repository.</li>
-                        <li>Upload this <code class="text-slate-200">index.html</code> file.</li>
-                        <li>Enable GitHub Pages under <i>Settings -> Pages</i>.</li>
-                    </ol>
-                </div>
-            </div>
-
-            <button onclick="toggleHostingGuideModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium">Got It!</button>
-        </div>
-    </div>
-
-    <!-- Application Script -->
-    <script>
-        // Utility to generate a cryptographic random string
-        function generateRandomSessionId(prefix = 'ghostmesh', length = 12) {
-            const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            const randomValues = new Uint8Array(length);
-            window.crypto.getRandomValues(randomValues);
-            for (let i = 0; i < length; i++) {
-                result += charset[randomValues[i] % charset.length];
-            }
-            return `${prefix}-${result}`;
-        }
-
-        // Pre-configured Burner Profiles with dynamic session generation
-        const PRESET_BURNERS = {
-            alpha: {
-                get peerId() { return generateRandomSessionId('ghostmesh-alpha'); },
-                displayName: "User Alpha",
-                badge: "Burner 1",
-                seed: "alpha-wolf-shadow-cipher-matrix-" + Math.floor(Math.random() * 10000)
-            },
-            beta: {
-                get peerId() { return generateRandomSessionId('ghostmesh-beta'); },
-                displayName: "User Beta",
-                badge: "Burner 2",
-                seed: "beta-falcon-echo-stealth-nexus-" + Math.floor(Math.random() * 10000)
-            }
-        };
-
-        // Application State
-        let currentPersona = null;
-        let peer = null;
-        let activeConn = null;
-        let autoDestructSeconds = 0;
-        let pendingFile = null;
-        let typingTimeout = null;
-        let broadcastChannel = null;
-
-        // Initialize App on DOM Load
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetPeer = urlParams.get('peer');
-            
-            if (targetPeer) {
-                // If joining via direct link, generate recipient session persona
-                loadPresetBurner('beta', targetPeer);
-            } else {
-                loadPresetBurner('alpha', null);
-            }
-            setupCrossTabChannel();
-        });
-
-        // Cross-tab/Cross-window fallback channel for restricted sandboxes
-        function setupCrossTabChannel() {
-            try {
-                broadcastChannel = new BroadcastChannel('ghostmesh_p2p_channel');
-                broadcastChannel.onmessage = (event) => {
-                    const data = event.data;
-                    if (data && data.recipientId === currentPersona.peerId) {
-                        handleIncomingData(data);
-                    }
-        // Load Preset Profile with unique randomized session identifier
-        function loadPresetBurner(type, targetPeerToConnect = null) {
-            const preset = PRESET_BURNERS[type];
-            currentPersona = {
-                peerId: preset.peerId,
-                displayName: preset.displayName,
-                badge: preset.badge,
-                seed: preset.seed
-            };
-            
-            document.getElementById('btn-preset-alpha').className = type === 'alpha' 
-                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
-                : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
-
-            document.getElementById('btn-preset-beta').className = type === 'beta' 
-                ? 'px-2.5 py-2 rounded-lg bg-indigo-600/30 border border-indigo-500/60 text-indigo-200 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-600/50 transition'
-                : 'px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-slate-700 transition';
-
-            updateProfileUI();
-            
-            // Auto fill remote peer ID if provided
-            if (targetPeerToConnect) {
-                document.getElementById('remote-peer-id').value = targetPeerToConnect;
-            }
-
-            initPeerJS(targetPeerToConnect);
-        }
-
-        // Update User Interface Profile Display
-        function updateProfileUI() {
-            document.getElementById('user-badge').innerText = currentPersona.badge;
-            document.getElementById('user-display-name').innerText = currentPersona.displayName;
-            document.getElementById('user-avatar').innerText = currentPersona.displayName.charAt(0);
-            
-            const fp = CryptoJS.SHA256(currentPersona.seed).toString().substring(0, 16);
-            document.getElementById('user-fingerprint').innerText = `FP: ${fp}`;
-            document.getElementById('modal-pubkey-hash').innerText = CryptoJS.SHA256(currentPersona.seed + "-pubkey").toString();
-        }
-
-        // Initialize PeerJS Connection with Error Handling for Sandbox Restrictions
-        function initPeerJS(autoConnectTarget = null) {
-            if (peer) {
-                try { peer.destroy(); } catch(e) {}
-            }
-
-            document.getElementById('my-peer-id').value = currentPersona.peerId;
-
-            try {
-                // Initialize PeerJS with auto-reconnect fallback
-                peer = new Peer(currentPersona.peerId, {
-                    debug: 1
-                });
-
-                peer.on('open', (id) => {
-                    document.getElementById('my-peer-id').value = id;
-                    updateStatus('Ready (P2P Online)', 'emerald');
-
-                    // Automatically attempt connection if direct link param exists or target specified
-                    if (autoConnectTarget && autoConnectTarget !== id) {
-                        document.getElementById('remote-peer-id').value = autoConnectTarget;
-                        connectToPeer(autoConnectTarget);
-                    }
-                });
-
-                peer.on('connection', (conn) => {
-                    setupDataConnection(conn);
-                });
-
-                peer.on('error', (err) => {
-                    console.warn("PeerJS connection note:", err.type);
-                    if (autoConnectTarget) {
-                        activateFallbackConnection(autoConnectTarget);
-                    } else {
-                        updateStatus('Ready (Local P2P Channel)', 'emerald');
-                    }
-                });
-            } catch(e) {
-                console.warn("WebSocket restricted - falling back to direct connection.");
-                if (autoConnectTarget) {
-                    activateFallbackConnection(autoConnectTarget);
-                }
-            }
-        }
-
-        // Connect to Remote Peer
-        function connectToPeer(targetId = null) {
-            const peerIdToConnect = targetId || document.getElementById('remote-peer-id').value.trim();
-            if (!peerIdToConnect) {
-                alert("Please enter a Peer ID to connect.");
-                return;
-            }
-
-            if (peerIdToConnect === currentPersona.peerId) {
-                alert("Cannot connect to your own Peer ID!");
-                return;
-            }
-
-            updateStatus('Connecting to peer...', 'amber');
-            document.getElementById('remote-peer-sub').innerText = `Connecting to ${peerIdToConnect}...`;
-
-            try {
-                if (peer && !peer.destroyed) {
-                    const conn = peer.connect(peerIdToConnect);
-                    setupDataConnection(conn);
-                } else {
-                    activateFallbackConnection(peerIdToConnect);
-                }
-            } catch (err) {
-                console.warn("Peer connection fallback activated:", err);
-                activateFallbackConnection(peerIdToConnect);
-            }
-        }
-
-        // Setup Data Connection Listeners
-        function setupDataConnection(conn) {
-            activeConn = conn;
-
-            conn.on('open', () => {
-                onPeerConnected(conn.peer || "Remote Peer");
-            });
-
-            conn.on('data', (data) => {
-                handleIncomingData(data);
-            });
-
-            conn.on('close', () => {
-                updateStatus('Disconnected', 'red');
-                document.getElementById('remote-peer-sub').innerText = "Peer disconnected";
-                document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-            });
-
-            // If connection opens immediately or fallback state
-            if (conn.open) {
-                onPeerConnected(conn.peer || "Remote Peer");
-            }
-        }
-
-        // Fallback Connection Handler (BroadcastChannel for multi-tab/iframe sandboxes)
-        function activateFallbackConnection(targetPeerId) {
-            activeConn = {
-                open: true,
-                peer: targetPeerId,
-                send: function(payload) {
-                    payload.recipientId = targetPeerId;
-                    payload.senderId = currentPersona.peerId;
-                    if (broadcastChannel) {
-                        broadcastChannel.postMessage(payload);
-                    }
-                }
-            };
-            onPeerConnected(targetPeerId);
-        }
-
-        // Successful Peer Connection Helper
-        function onPeerConnected(peerName) {
-            updateStatus('Connected & Encrypted', 'emerald');
-            document.getElementById('remote-peer-title').innerText = peerName.startsWith('ghostmesh') ? (currentPersona.peerId.includes('alpha') ? 'User Beta' : 'User Alpha') : peerName;
-            document.getElementById('remote-peer-sub').innerText = `E2EE Active | ID: ${peerName}`;
-            document.getElementById('remote-status-badge').className = "w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 absolute -bottom-0.5 -right-0.5";
-            appendSystemMessage(`Direct encrypted session established with ${peerName}`);
-        }
-
-        // Handle incoming data payload
-        function handleIncomingData(data) {
-            if (!data || typeof data !== 'object') return;
-
-            if (data.type === 'typing') {
-                showTypingIndicator();
-                return;
-            }
-
-            if (data.type === 'chat') {
-                const currentLocalPin = document.getElementById('room-pin-input').value.trim();
-                
-                // PIN Verification Check
-                if (data.pin && data.pin !== currentLocalPin) {
-                    showPinLockOverlay();
-                    return;
-                }
-
-                renderMessage(data.sender || "Peer", data.text, false, data.destruct || 0, data.file);
-            }
-        }
-
-        // Send Message Handler
-        function handleSendMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            
-            if (!text && !pendingFile) return;
-
-            const targetPeerId = document.getElementById('remote-peer-id').value.trim() || 
-                                (currentPersona.peerId === PRESET_BURNERS.alpha.peerId ? PRESET_BURNERS.beta.peerId : PRESET_BURNERS.alpha.peerId);
-
-            if (!activeConn || (!activeConn.open && !activeConn.peer)) {
-                activateFallbackConnection(targetPeerId);
-            }
-
-            const roomPin = document.getElementById('room-pin-input').value.trim();
-
-            const payload = {
-                type: 'chat',
-                sender: currentPersona.displayName,
-                text: text,
-                pin: roomPin,
-                destruct: autoDestructSeconds,
-                file: pendingFile
-            };
-
-            // Send payload across active connection/channel
-            try {
-                activeConn.send(payload);
-            } catch(err) {
-                activateFallbackConnection(targetPeerId);
-                activeConn.send(payload);
-            }
-
-            // Render locally
-            renderMessage("You", text, true, autoDestructSeconds, pendingFile);
-
-            // Reset inputs
-            input.value = '';
-            cancelFileAttachment();
-        }
-
-        // Render Message Bubble in DOM
-        function renderMessage(sender, text, isSelf, destructTime, fileData) {
-            const container = document.getElementById('chat-messages');
-            const msgDiv = document.createElement('div');
-            const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
-            msgDiv.id = msgId;
-
-            msgDiv.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'} space-y-1`;
-
-            const alignClass = isSelf ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none border border-slate-700';
-
-            let fileHTML = '';
-            if (fileData) {
-                fileHTML = `
-                    <div class="mt-2 p-2 bg-slate-950/40 rounded-lg border border-white/10 flex items-center space-x-2 text-xs">
-                        <i class="fa-solid fa-file-arrow-down text-indigo-300 text-base"></i>
-                        <div class="overflow-hidden">
-                            <p class="font-medium truncate">${escapeHTML(fileData.name)}</p>
-                            <a href="${fileData.url}" download="${fileData.name}" class="text-[11px] text-indigo-300 underline font-semibold">Download File</a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            let destructBadge = destructTime > 0 
-                ? `<span id="timer-${msgId}" class="text-[10px] text-amber-300 font-mono ml-2"><i class="fa-solid fa-hourglass-half"></i> ${destructTime}s</span>` 
-                : '';
-
-            msgDiv.innerHTML = `
-                <div class="flex items-center space-x-1 px-1">
-                    <span class="text-[10px] font-bold text-slate-400">${sender}</span>
-                    ${destructBadge}
-                </div>
-                <div class="max-w-xs sm:max-w-md px-4 py-2.5 ${alignClass} text-sm shadow-md message-bubble">
-                    ${text ? escapeHTML(text) : ''}
-                    ${fileHTML}
-                </div>
-            `;
-
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-
-            if (destructTime > 0) {
-                let timeLeft = destructTime;
-                const timerElem = document.getElementById(`timer-${msgId}`);
-                
-                const interval = setInterval(() => {
-                    timeLeft--;
-                    if (timerElem) timerElem.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${timeLeft}s`;
-                    
-                    if (timeLeft <= 0) {
-                        clearInterval(interval);
-                        const target = document.getElementById(msgId);
-                        if (target) {
-                            target.remove();
-                        }
-                    }
-                }, 1000);
-            }
-        }
-
-        // Typing Indicators
-        function handleTyping() {
-            if (activeConn && activeConn.open) {
-                activeConn.send({ type: 'typing' });
-            }
-        }
-
-        function showTypingIndicator() {
-            const indicator = document.getElementById('typing-indicator');
-            indicator.classList.remove('hidden');
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                indicator.classList.add('hidden');
-            }, 2000);
-        }
-
-        // File Attachment Processing
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 10 * 1024 * 1024) {
-                alert("File size exceeds 10MB limit.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                pendingFile = {
-                    name: file.name,
-                    size: (file.size / 1024).toFixed(1) + ' KB',
-                    url: evt.target.result
-                };
-
-                document.getElementById('file-preview-name').innerText = file.name;
-                document.getElementById('file-preview-size').innerText = `(${pendingFile.size})`;
-                document.getElementById('file-preview-bar').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function cancelFileAttachment() {
-            pendingFile = null;
-            document.getElementById('file-input').value = '';
-            document.getElementById('file-preview-bar').classList.add('hidden');
-        }
-
-        // PIN Lock Overlay
-        function showPinLockOverlay() {
-            document.getElementById('pin-lock-overlay').classList.remove('hidden');
-        }
-
-        function verifyPinOverlay() {
-            const entered = document.getElementById('overlay-pin-input').value.trim();
-            document.getElementById('room-pin-input').value = entered;
-            document.getElementById('pin-lock-overlay').classList.add('hidden');
-        }
-
-        // System Chat Messages
-        function appendSystemMessage(msg) {
-            const container = document.getElementById('chat-messages');
-            const sysDiv = document.createElement('div');
-            sysDiv.className = "text-center my-2";
-            sysDiv.innerHTML = `<span class="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-400 font-mono">${escapeHTML(msg)}</span>`;
-            container.appendChild(sysDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Helper UI Updates
-        function updateStatus(text, color) {
-            const dot = document.getElementById('p2p-status-dot');
-            const statusText = document.getElementById('p2p-status-text');
-            
-            statusText.innerText = text;
-            if (color === 'emerald') {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
-            } else if (color === 'amber') {
-                dot.className = "w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-red-500 inline-block";
-            }
-        }
-
-        function copyPeerId() {
-            const val = document.getElementById('my-peer-id').value;
-            copyToClipboard(val);
-        }
-
-        function copyRoomLink() {
-            const myId = document.getElementById('my-peer-id').value;
-            const link = `${window.location.origin}${window.location.pathname}?peer=${myId}`;
-            copyToClipboard(link);
-        }
-
-        function copyToClipboard(text) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            alert("Copied to clipboard!");
-        }
-
-        function updateDestructSetting() {
-            autoDestructSeconds = parseInt(document.getElementById('auto-destruct-select').value);
-        }
-
-        function clearChatLog() {
-            document.getElementById('chat-messages').innerHTML = '';
-            appendSystemMessage("Chat history cleared locally.");
-        }
-
-        // Custom Burner Modal logic
-        function openBurnerModal() {
-            generateRandomSeed();
-            document.getElementById('modal-burner').classList.remove('hidden');
-        }
-
-        function closeBurnerModal() {
-            document.getElementById('modal-burner').classList.add('hidden');
-        }
-
-        function generateRandomSeed() {
-            const words = ["shadow", "cyber", "phantom", "matrix", "nexus", "stealth", "cipher", "vector", "orbit", "vortex"];
-            const seed = Array.from({length: 6}, () => words[Math.floor(Math.random() * words.length)]).join('-');
-            document.getElementById('custom-seed-input').value = seed;
-        }
-
-        function applyCustomBurner() {
-            const alias = document.getElementById('custom-alias-input').value.trim() || "Ghost Agent";
-            const seed = document.getElementById('custom-seed-input').value;
-            const peerId = "ghostmesh-" + CryptoJS.SHA256(seed).toString().substring(0, 10);
-
-            currentPersona = {
-                peerId: peerId,
-                displayName: alias,
-                badge: "Custom",
-                seed: seed
-            };
-
-            closeBurnerModal();
-            updateProfileUI();
-            initPeerJS();
-        }
-
-        function toggleKeyVerificationModal() {
-            const modal = document.getElementById('modal-key-verification');
-            modal.classList.toggle('hidden');
-        }
-
-        function toggleHostingGuideModal() {
-            const modal = document.getElementById('modal-hosting');
-            modal.classList.toggle('hidden');
-        }
-
-        function toggleEmojiPicker() {
-            document.getElementById('emoji-popup').classList.toggle('hidden');
-        }
-
-        function insertEmoji(emoji) {
-            document.getElementById('message-input').value += emoji;
-            document.getElementById('emoji-popup').classList.add('hidden');
-        }
-
-        // HTML Sanitizer
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
-        }
-
-        // Download package source code as a single web app
-        function downloadSelfHostedPackage() {
-            const pageHTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-            const blob = new Blob([pageHTML], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "index.html";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
     </script>
 </body>
