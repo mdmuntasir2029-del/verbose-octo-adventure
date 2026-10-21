@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostMesh - Encrypted Private Chat</title>
+    <title>p.geon - Private Chat</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,9 +12,15 @@
             theme: {
                 extend: {
                     colors: {
-                        slate: {
-                            850: '#111827',
-                            950: '#030712'
+                        theme: {
+                            50: 'var(--color-bg-subtle)',
+                            100: 'var(--color-bg-muted)',
+                            800: 'var(--color-border)',
+                            900: 'var(--color-card)',
+                            950: 'var(--color-bg-main)',
+                            accent: 'var(--color-accent)',
+                            'accent-hover': 'var(--color-accent-hover)',
+                            light: 'var(--color-text-light)',
                         }
                     }
                 }
@@ -26,24 +32,69 @@
     <!-- PeerJS CDN -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
+        /* Theme Preset Variables */
+        :root[data-theme="pigeon"] {
+            --color-bg-main: #121417;
+            --color-card: #1c1f26;
+            --color-bg-muted: #272b35;
+            --color-bg-subtle: #181a20;
+            --color-border: #2e3440;
+            --color-accent: #708090;
+            --color-accent-hover: #5c6b79;
+            --color-text-light: #eceff4;
+        }
+
+        :root[data-theme="love"] {
+            --color-bg-main: #1a0a12;
+            --color-card: #28101c;
+            --color-bg-muted: #3a1728;
+            --color-bg-subtle: #210d17;
+            --color-border: #4a1d33;
+            --color-accent: #d6336c;
+            --color-accent-hover: #b82558;
+            --color-text-light: #fcc2d7;
+        }
+
+        :root[data-theme="emerald"] {
+            --color-bg-main: #0a1410;
+            --color-card: #11221c;
+            --color-bg-muted: #19332a;
+            --color-bg-subtle: #0d1a15;
+            --color-border: #23473b;
+            --color-accent: #2e7d32;
+            --color-accent-hover: #236327;
+            --color-text-light: #e8f5e9;
+        }
+
+        :root[data-theme="amber"] {
+            --color-bg-main: #14100a;
+            --color-card: #211b11;
+            --color-bg-muted: #302719;
+            --color-bg-subtle: #1a140d;
+            --color-border: #423623;
+            --color-accent: #d97706;
+            --color-accent-hover: #b45309;
+            --color-text-light: #fef3c7;
+        }
+
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #030712; }
-        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+        ::-webkit-scrollbar-track { background: var(--color-bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
         .message-bubble { word-break: break-word; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col antialiased overflow-hidden">
+<body class="bg-theme-950 text-slate-200 font-sans h-screen flex flex-col antialiased overflow-hidden transition-colors duration-300">
 
-    <!-- Top Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex-shrink-0 z-30">
+    <header class="bg-theme-900 border-b border-theme-800 px-4 py-3 flex-shrink-0 z-30">
         <div class="max-w-6xl mx-auto flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                <div class="w-9 h-9 rounded-xl bg-theme-accent flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-[#000] fa-dove text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-base tracking-wide text-slate-100">GhostMesh</h1>
+                    <h1 class="font-bold text-base tracking-wide text-theme-light flex items-center gap-1.5">
+                        p.geon
+                    </h1>
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <span id="p2p-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                         <span id="p2p-status-text">Ready</span>
@@ -53,107 +104,105 @@
 
             <!-- Action Bar -->
             <div class="flex items-center space-x-2">
-                <button onclick="copyDirectChatLink()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow">
+                <button onclick="copyDirectChatLink()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-theme-accent hover:bg-theme-accent-hover text-white transition flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-link"></i>
-                    <span>Invite Friend</span>
+                    <span>Invite</span>
                 </button>
-                <button onclick="toggleSettingsModal()" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition" title="Settings">
+                <button onclick="toggleSettingsModal()" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-theme-100 rounded-lg transition" title="Settings">
                     <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Application Canvas -->
     <main class="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 grid grid-cols-1 md:grid-cols-4 gap-4 h-[calc(100vh-61px)] overflow-hidden">
 
-        <!-- Sidebar: User Profile & Saved Chats -->
-        <aside class="md:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between overflow-y-auto space-y-4">
-            
+        <!-- Sidebar -->
+        <aside class="md:col-span-1 bg-theme-900 border border-theme-800 rounded-2xl p-3.5 flex flex-col justify-between overflow-y-auto space-y-4">
             <div class="space-y-4">
-                <!-- User Profile Summary -->
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-1">Your Identity</span>
+                <!-- Profile Card -->
+                <div class="bg-theme-950 p-3 rounded-xl border border-theme-800">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">Your Identity</span>
                     <div class="flex items-center space-x-2.5">
-                        <div id="user-avatar" class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-white flex-shrink-0">
+                        <div id="user-avatar" class="w-8 h-8 rounded-full bg-theme-accent flex items-center justify-center font-bold text-sm text-white flex-shrink-0">
                             U
                         </div>
                         <div class="overflow-hidden flex-1">
-                            <h3 id="user-display-name" class="font-semibold text-slate-200 text-xs truncate">User</h3>
+                            <h3 id="user-display-name" class="font-semibold text-theme-light text-xs truncate">User</h3>
                             <p id="my-peer-id-display" class="text-[10px] text-slate-400 font-mono truncate">ID: Initializing...</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Connect Box -->
+                <!-- Connect Input -->
                 <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-slate-400">Chat with Friend:</label>
+                    <label class="block text-xs font-semibold text-slate-400">Connect to Peer:</label>
                     <div class="flex items-center gap-1.5">
-                        <input id="remote-peer-id" type="text" placeholder="Paste Friend's ID..." class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 w-full font-mono focus:outline-none focus:border-indigo-500">
-                        <button onclick="connectToPeer()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+                        <input id="remote-peer-id" type="text" placeholder="Paste ID..." class="bg-theme-950 border border-theme-800 text-slate-200 text-xs rounded-xl px-3 py-2 w-full font-mono focus:outline-none focus:border-theme-accent">
+                        <button onclick="connectToPeer()" class="px-3 py-2 bg-theme-accent hover:bg-theme-accent-hover text-white rounded-xl text-xs font-semibold transition">
                             Connect
                         </button>
                     </div>
                 </div>
 
-                <hr class="border-slate-800">
+                <hr class="border-theme-800">
 
-                <!-- Saved Chats Section -->
+                <!-- Saved Conversations -->
                 <div>
-                    <span class="text-xs font-semibold text-slate-400 block mb-2">Saved Conversations</span>
+                    <span class="text-xs font-semibold text-slate-400 block mb-2">Saved Chats</span>
                     <div id="saved-conversations-list" class="space-y-1 text-xs">
-                        <p class="text-[11px] text-slate-500 italic p-2">No previous conversations saved yet.</p>
+                        <p class="text-[11px] text-slate-500 italic p-2">No saved chats yet.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Clear Local Messages Button -->
             <button onclick="confirmClearHistory()" class="w-full py-2 px-3 bg-red-950/40 border border-red-800/40 hover:bg-red-900/60 text-red-300 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-trash-can"></i>
-                <span>Clear Saved History</span>
+                <span>Clear History</span>
             </button>
-
         </aside>
 
         <!-- Chat Area -->
-        <section class="md:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col justify-between overflow-hidden shadow-xl relative">
-
-            <!-- Chat Room Header -->
-            <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <section class="md:col-span-3 bg-theme-900 border border-theme-800 rounded-2xl flex flex-col justify-between overflow-hidden shadow-xl relative">
+            <!-- Room Header -->
+            <div class="bg-theme-950 px-4 py-3 border-b border-theme-800 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
-                        <i id="remote-avatar-icon" class="fa-solid fa-user"></i>
+                    <div class="w-8 h-8 rounded-full bg-theme-100 border border-theme-800 flex items-center justify-center text-slate-300 font-bold text-xs">
+                        <i id="remote-avatar-icon" class="fa-solid fa-feather"></i>
                     </div>
                     <div>
-                        <h2 id="remote-peer-title" class="font-semibold text-slate-200 text-xs sm:text-sm">Direct Encrypted Channel</h2>
-                        <p id="typing-indicator" class="text-[11px] text-indigo-400 italic hidden">typing...</p>
-                        <p id="remote-peer-sub" class="text-[11px] text-slate-500">Waiting to connect...</p>
+                        <div class="flex items-center gap-2">
+                            <h2 id="remote-peer-title" class="font-semibold text-theme-light text-xs sm:text-sm">Direct Encrypted Channel</h2>
+                            <button id="edit-nickname-btn" onclick="openNicknameModal()" class="hidden text-slate-400 hover:text-theme-light text-xs" title="Set Nickname">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                        </div>
+                        <p id="typing-indicator" class="text-[11px] text-theme-accent italic hidden">typing...</p>
+                        <p id="remote-peer-sub" class="text-[11px] text-slate-400">Waiting to connect...</p>
                     </div>
                 </div>
 
-                <button onclick="copyDirectChatLink()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                <button onclick="copyDirectChatLink()" class="text-xs text-slate-300 hover:text-white flex items-center gap-1">
                     <i class="fa-solid fa-share-nodes"></i>
                     <span class="hidden sm:inline">Share Link</span>
                 </button>
             </div>
 
-            <!-- Chat Messages Log -->
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/40">
-                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 max-w-md mx-auto text-center space-y-2 my-auto">
-                    <i class="fa-solid fa-lock text-indigo-400 text-xl"></i>
-                    <h3 class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Persistent Encrypted Messenger</h3>
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-theme-950/40">
+                <div class="bg-theme-900/80 border border-theme-800 rounded-xl p-4 max-w-md mx-auto text-center space-y-2 my-auto">
+                    <i class="fa-solid fa-lock text-theme-accent text-xl"></i>
+                    <h3 class="text-xs font-semibold text-theme-light uppercase tracking-wider">p.geon Private Chat</h3>
                     <p class="text-[11px] text-slate-400 leading-relaxed">
-                        Messages are saved locally in your browser storage so you can exit and continue your conversation later. Send an invite link to your friend to start chatting!
+                        Messages are saved locally in your browser storage. Send an invite link to start communicating over direct P2P.
                     </p>
                 </div>
             </div>
 
-            <!-- Input Form -->
-            <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-                <!-- Selected File Preview -->
-                <div id="file-preview-bar" class="hidden flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300">
+            <!-- Input Box -->
+            <div class="p-3 bg-theme-950 border-t border-theme-800 space-y-2">
+                <div id="file-preview-bar" class="hidden flex items-center justify-between bg-theme-900 px-3 py-1.5 rounded-lg border border-theme-800 text-xs text-slate-300">
                     <div class="flex items-center space-x-2 truncate">
-                        <i class="fa-solid fa-paperclip text-indigo-400"></i>
+                        <i class="fa-solid fa-paperclip text-theme-accent"></i>
                         <span id="file-preview-name" class="truncate font-mono">file.png</span>
                     </div>
                     <button onclick="cancelFileAttachment()" class="text-slate-500 hover:text-red-400">
@@ -164,40 +213,38 @@
                 <form id="chat-form" onsubmit="handleSendMessage(event)" class="flex items-center gap-2">
                     <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
                     
-                    <button type="button" onclick="document.getElementById('file-input').click()" class="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-900 rounded-xl transition border border-slate-800" title="Attach File">
+                    <button type="button" onclick="document.getElementById('file-input').click()" class="p-2.5 text-slate-400 hover:text-theme-light hover:bg-theme-900 rounded-xl transition border border-theme-800" title="Attach File">
                         <i class="fa-solid fa-paperclip"></i>
                     </button>
 
-                    <button type="button" onclick="toggleEmojiPicker()" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl transition border border-slate-800 relative" title="Insert Emoji">
+                    <button type="button" onclick="toggleEmojiPicker()" class="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-theme-900 rounded-xl transition border border-theme-800 relative" title="Insert Emoji">
                         <i class="fa-solid fa-face-smile"></i>
-                        <div id="emoji-popup" class="hidden absolute bottom-12 left-0 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl grid grid-cols-5 gap-1.5 z-50">
-                            <span onclick="insertEmoji('🔒')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔒</span>
-                            <span onclick="insertEmoji('👍')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👍</span>
-                            <span onclick="insertEmoji('😊')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">😊</span>
-                            <span onclick="insertEmoji('🔥')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">🔥</span>
-                            <span onclick="insertEmoji('👋')" class="cursor-pointer hover:bg-slate-800 p-1.5 rounded text-center">👋</span>
+                        <div id="emoji-popup" class="hidden absolute bottom-12 left-0 bg-theme-900 border border-theme-800 p-2 rounded-xl shadow-2xl grid grid-cols-5 gap-1.5 z-50">
+                            <span onclick="insertEmoji('❤️')" class="cursor-pointer hover:bg-theme-100 p-1.5 rounded text-center">❤️</span>
+                            <span onclick="insertEmoji('💕')" class="cursor-pointer hover:bg-theme-100 p-1.5 rounded text-center">💕</span>
+                            <span onclick="insertEmoji('🔒')" class="cursor-pointer hover:bg-theme-100 p-1.5 rounded text-center">🔒</span>
+                            <span onclick="insertEmoji('👍')" class="cursor-pointer hover:bg-theme-100 p-1.5 rounded text-center">👍</span>
+                            <span onclick="insertEmoji('😊')" class="cursor-pointer hover:bg-theme-100 p-1.5 rounded text-center">😊</span>
                         </div>
                     </button>
 
-                    <input id="message-input" type="text" oninput="handleTyping()" placeholder="Type end-to-end encrypted message..." class="flex-1 bg-slate-900 border border-slate-800 text-slate-100 text-xs sm:text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition placeholder-slate-500">
+                    <input id="message-input" type="text" oninput="handleTyping()" placeholder="Type end-to-end encrypted message..." class="flex-1 bg-theme-900 border border-theme-800 text-slate-100 text-xs sm:text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-theme-accent transition placeholder-slate-500">
 
-                    <button type="submit" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-md">
+                    <button type="submit" class="px-4 py-2.5 bg-theme-accent hover:bg-theme-accent-hover text-white rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-md">
                         <span>Send</span>
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                 </form>
             </div>
-
         </section>
-
     </main>
 
     <!-- Settings Modal -->
-    <div id="modal-settings" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+    <div id="modal-settings" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-theme-900 border border-theme-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-user-gear text-indigo-400"></i> Profile Settings
+                <h3 class="text-sm font-bold text-theme-light flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-theme-accent"></i> Settings
                 </h3>
                 <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-200">
                     <i class="fa-solid fa-xmark"></i>
@@ -207,39 +254,74 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Display Name:</label>
-                    <input id="settings-alias-input" type="text" placeholder="Your Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <input id="settings-alias-input" type="text" placeholder="Your Name" class="w-full bg-theme-950 border border-theme-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-theme-accent">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Color Theme:</label>
+                    <select id="theme-selector" onchange="changeTheme(this.value)" class="w-full bg-theme-950 border border-theme-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-theme-accent">
+                        <option value="pigeon">🕊️ Pigeon Grey (Default)</option>
+                        <option value="love">💖 Dark Pink Love (For Wife)</option>
+                        <option value="emerald">🌿 Deep Emerald</option>
+                        <option value="amber">🔥 Warm Amber</option>
+                    </select>
                 </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="toggleSettingsModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancel</button>
-                <button onclick="saveProfileSettings()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-500">Save</button>
+                <button onclick="toggleSettingsModal()" class="px-3 py-1.5 bg-theme-100 text-slate-300 rounded-lg text-xs hover:bg-theme-800">Cancel</button>
+                <button onclick="saveProfileSettings()" class="px-3 py-1.5 bg-theme-accent text-white rounded-lg text-xs hover:bg-theme-accent-hover">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Application Logic -->
+    <!-- Nickname Modal -->
+    <div id="modal-nickname" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-theme-900 border border-theme-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-theme-light flex items-center gap-2">
+                    <i class="fa-solid fa-heart text-theme-accent"></i> Set Nickname
+                </h3>
+                <button onclick="closeNicknameModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Nickname for this Peer:</label>
+                <input id="nickname-input" type="text" placeholder="e.g. My Love, Wife, Bestie" class="w-full bg-theme-950 border border-theme-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-theme-accent">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeNicknameModal()" class="px-3 py-1.5 bg-theme-100 text-slate-300 rounded-lg text-xs hover:bg-theme-800">Cancel</button>
+                <button onclick="saveNickname()" class="px-3 py-1.5 bg-theme-accent text-white rounded-lg text-xs hover:bg-theme-accent-hover">Save Nickname</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const LOCAL_STORAGE_KEY = 'ghostmesh_persistent_history_v2';
-        const USER_PROFILE_KEY = 'ghostmesh_user_profile_v2';
+        const LOCAL_STORAGE_KEY = 'pgeon_persistent_history_v3';
+        const USER_PROFILE_KEY = 'pgeon_user_profile_v3';
+        const NICKNAMES_KEY = 'pgeon_nicknames_v3';
 
         let userProfile = null;
         let peer = null;
         let activeConn = null;
         let activePeerId = null;
-        let chatHistory = {}; // Store messages by target Peer ID
+        let chatHistory = {}; 
+        let nicknames = {};
+        let unreadCounts = {};
         let pendingFile = null;
         let typingTimeout = null;
         let broadcastChannel = null;
 
-        // Initialize Application
         window.addEventListener('DOMContentLoaded', () => {
             loadUserProfile();
+            loadNicknames();
             loadChatHistoryFromStorage();
             initBroadcastChannel();
             initPeerJS();
             
-            // Auto connect if query parameter is present
             const urlParams = new URLSearchParams(window.location.search);
             const targetPeer = urlParams.get('peer');
             if (targetPeer && targetPeer !== userProfile.peerId) {
@@ -248,34 +330,76 @@
             }
         });
 
-        // Load or create persistent user profile
         function loadUserProfile() {
             const saved = localStorage.getItem(USER_PROFILE_KEY);
             if (saved) {
-                try {
-                    userProfile = JSON.parse(saved);
-                } catch(e) {}
+                try { userProfile = JSON.parse(saved); } catch(e) {}
             }
 
-            // Always assign a unique ID per session/tab if not set, or ensure unique identity
             if (!userProfile) {
-                const randomId = 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 6);
+                const randomId = 'pgeon-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 6);
                 userProfile = {
-                    peerId: 'ghostmesh-' + randomId,
-                    displayName: 'User ' + randomId.substr(-4)
+                    peerId: randomId,
+                    displayName: 'User ' + randomId.substr(-4),
+                    theme: 'pigeon'
                 };
                 localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
             }
 
+            changeTheme(userProfile.theme || 'pigeon');
             document.getElementById('user-display-name').innerText = userProfile.displayName;
             document.getElementById('user-avatar').innerText = userProfile.displayName.charAt(0).toUpperCase();
             document.getElementById('settings-alias-input').value = userProfile.displayName;
+            document.getElementById('theme-selector').value = userProfile.theme || 'pigeon';
         }
 
-        // Setup local cross-tab fallback
+        function changeTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            if (userProfile) {
+                userProfile.theme = themeName;
+                localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+            }
+        }
+
+        function loadNicknames() {
+            const saved = localStorage.getItem(NICKNAMES_KEY);
+            if (saved) {
+                try { nicknames = JSON.parse(saved); } catch(e) {}
+            }
+        }
+
+        function getDisplayName(peerId) {
+            return nicknames[peerId] || peerId;
+        }
+
+        function openNicknameModal() {
+            if (!activePeerId) return;
+            document.getElementById('nickname-input').value = nicknames[activePeerId] || '';
+            document.getElementById('modal-nickname').classList.remove('hidden');
+        }
+
+        function closeNicknameModal() {
+            document.getElementById('modal-nickname').classList.add('hidden');
+        }
+
+        function saveNickname() {
+            if (!activePeerId) return;
+            const newNick = document.getElementById('nickname-input').value.trim();
+            if (newNick) {
+                nicknames[activePeerId] = newNick;
+            } else {
+                delete nicknames[activePeerId];
+            }
+            localStorage.setItem(NICKNAMES_KEY, JSON.stringify(nicknames));
+            closeNicknameModal();
+            
+            document.getElementById('remote-peer-title').innerText = getDisplayName(activePeerId);
+            updateSavedConversationsUI();
+        }
+
         function initBroadcastChannel() {
             if ('BroadcastChannel' in window) {
-                broadcastChannel = new BroadcastChannel('ghostmesh_local_sync');
+                broadcastChannel = new BroadcastChannel('pgeon_local_sync');
                 broadcastChannel.onmessage = (event) => {
                     if (event.data && event.data.targetPeerId === userProfile.peerId) {
                         handleIncomingData(event.data.payload);
@@ -284,7 +408,6 @@
             }
         }
 
-        // Initialize PeerJS with Sandbox WebSocket Error Catching
         function initPeerJS() {
             if (peer) try { peer.destroy(); } catch(e) {}
 
@@ -296,23 +419,18 @@
                     updateStatus('Ready (Online)', 'emerald');
                 });
 
-                peer.on('connection', (conn) => {
-                    setupDataConnection(conn);
-                });
+                peer.on('connection', (conn) => setupDataConnection(conn));
 
                 peer.on('error', (err) => {
-                    console.warn('PeerJS note/fallback active:', err.type || err);
                     document.getElementById('my-peer-id-display').innerText = `ID: ${userProfile.peerId}`;
-                    updateStatus('Local Fallback Active', 'amber');
+                    updateStatus('Local Mode', 'amber');
                 });
             } catch(e) {
-                console.warn('PeerJS WebSocket creation blocked in this preview sandbox. Local BroadcastChannel active.');
                 document.getElementById('my-peer-id-display').innerText = `ID: ${userProfile.peerId}`;
-                updateStatus('Local Mode (Sandbox)', 'amber');
+                updateStatus('Sandbox Mode', 'amber');
             }
         }
 
-        // Connect to Remote Peer
         function connectToPeer(targetId = null) {
             const peerIdToConnect = targetId || document.getElementById('remote-peer-id').value.trim();
             if (!peerIdToConnect) return;
@@ -324,7 +442,7 @@
 
             activePeerId = peerIdToConnect;
             updateStatus('Connecting...', 'amber');
-            document.getElementById('remote-peer-sub').innerText = `Connecting to ${peerIdToConnect}...`;
+            document.getElementById('remote-peer-sub').innerText = `Connecting to ${getDisplayName(peerIdToConnect)}...`;
 
             if (peer && !peer.destroyed) {
                 try {
@@ -338,40 +456,34 @@
             }
         }
 
-        // Setup Data Connection Listeners
         function setupDataConnection(conn) {
             activeConn = conn;
             activePeerId = conn.peer;
 
-            conn.on('open', () => {
-                onPeerConnected(conn.peer);
-            });
-
-            conn.on('data', (data) => {
-                handleIncomingData(data);
-            });
-
+            conn.on('open', () => onPeerConnected(conn.peer));
+            conn.on('data', (data) => handleIncomingData(data));
             conn.on('close', () => {
                 updateStatus('Disconnected', 'red');
                 document.getElementById('remote-peer-sub').innerText = "Peer disconnected";
             });
 
-            if (conn.open) {
-                onPeerConnected(conn.peer);
-            }
+            if (conn.open) onPeerConnected(conn.peer);
         }
 
         function onPeerConnected(peerName) {
+            activePeerId = peerName;
             updateStatus('Connected', 'emerald');
-            document.getElementById('remote-peer-title').innerText = peerName;
-            document.getElementById('remote-peer-sub').innerText = `Direct Encrypted Session | Persistent Storage Active`;
-            
-            // Mark all received messages as SEEN
+            document.getElementById('remote-peer-title').innerText = getDisplayName(peerName);
+            document.getElementById('remote-peer-sub').innerText = `Direct Encrypted Session`;
+            document.getElementById('edit-nickname-btn').classList.remove('hidden');
+
+            // Clear unread indicator when actively viewing
+            unreadCounts[peerName] = 0;
             sendSeenAck();
             renderChatHistoryForPeer(peerName);
+            updateSavedConversationsUI();
         }
 
-        // Handle incoming data payload
         function handleIncomingData(data) {
             if (!data || typeof data !== 'object') return;
 
@@ -386,9 +498,11 @@
             }
 
             if (data.type === 'chat') {
+                const senderId = data.senderId || data.sender || activePeerId || "Unknown";
                 const msgObj = {
                     id: data.id || ('msg-' + Date.now()),
                     sender: data.sender || "Peer",
+                    senderId: senderId,
                     text: data.text,
                     file: data.file,
                     isSelf: false,
@@ -396,41 +510,32 @@
                     seen: true
                 };
 
-                saveMessageToHistory(activePeerId || data.sender, msgObj);
-                renderMessage(msgObj);
-                
-                // Send Seen receipt back to sender
-                sendSeenAck();
+                const isCurrent = (activePeerId === senderId);
+                if (!isCurrent) {
+                    unreadCounts[senderId] = (unreadCounts[senderId] || 0) + 1;
+                }
+
+                saveMessageToHistory(senderId, msgObj);
+                if (isCurrent) {
+                    renderMessage(msgObj);
+                    sendSeenAck();
+                }
             }
         }
 
-        // Send Seen receipt to active peer
         function sendSeenAck() {
             const payload = { type: 'seen', peerId: userProfile.peerId };
-            
-            if (activeConn && activeConn.open) {
-                activeConn.send(payload);
-            }
-            if (broadcastChannel) {
-                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
-            }
+            if (activeConn && activeConn.open) activeConn.send(payload);
+            if (broadcastChannel) broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
         }
 
-        // Mark local messages sent to active peer as seen
         function markMessagesAsSeenLocally(peerId) {
             if (!chatHistory[peerId]) return;
-            
-            chatHistory[peerId].forEach(msg => {
-                if (msg.isSelf) {
-                    msg.seen = true;
-                }
-            });
-
+            chatHistory[peerId].forEach(msg => { if (msg.isSelf) msg.seen = true; });
             saveChatHistoryToStorage();
             renderChatHistoryForPeer(peerId);
         }
 
-        // Send Message
         function handleSendMessage(e) {
             e.preventDefault();
             const input = document.getElementById('message-input');
@@ -438,33 +543,27 @@
 
             if (!text && !pendingFile) return;
             if (!activePeerId) {
-                alert("Please enter your friend's Peer ID and click Connect first!");
+                alert("Please enter a Peer ID and click Connect first!");
                 return;
             }
 
             const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
-
             const payload = {
                 type: 'chat',
                 id: msgId,
                 sender: userProfile.displayName,
+                senderId: userProfile.peerId,
                 text: text,
                 file: pendingFile
             };
 
-            // Send via WebRTC if open
-            if (activeConn && activeConn.open) {
-                activeConn.send(payload);
-            }
-
-            // Also broadcast locally across tabs
-            if (broadcastChannel) {
-                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
-            }
+            if (activeConn && activeConn.open) activeConn.send(payload);
+            if (broadcastChannel) broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
 
             const msgObj = {
                 id: msgId,
                 sender: "You",
+                senderId: userProfile.peerId,
                 text: text,
                 file: pendingFile,
                 isSelf: true,
@@ -479,40 +578,35 @@
             cancelFileAttachment();
         }
 
-        // Render Message Bubble with Seen Receipts
         function renderMessage(msg) {
             const container = document.getElementById('chat-messages');
-            
-            // Remove empty welcome placeholder if present
-            const placeholder = container.querySelector('.bg-slate-900\\/80');
+            const placeholder = container.querySelector('.bg-theme-900\\/80');
             if (placeholder) placeholder.remove();
 
             const msgDiv = document.createElement('div');
             msgDiv.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 my-1`;
 
-            const alignClass = msg.isSelf ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-100 rounded-2xl rounded-tl-none border border-slate-700';
+            const alignClass = msg.isSelf ? 'bg-theme-accent text-white rounded-2xl rounded-tr-none' : 'bg-theme-100 text-slate-100 rounded-2xl rounded-tl-none border border-theme-800';
 
             let fileHTML = '';
             if (msg.file) {
                 fileHTML = `
-                    <div class="mt-2 p-2 bg-slate-950/40 rounded-lg border border-white/10 flex items-center space-x-2 text-xs">
-                        <i class="fa-solid fa-file-arrow-down text-indigo-300 text-sm"></i>
+                    <div class="mt-2 p-2 bg-theme-950/40 rounded-lg border border-white/10 flex items-center space-x-2 text-xs">
+                        <i class="fa-solid fa-file-arrow-down text-white text-sm"></i>
                         <div class="overflow-hidden">
                             <p class="font-medium truncate">${escapeHTML(msg.file.name)}</p>
-                            <a href="${msg.file.url}" download="${msg.file.name}" class="text-[11px] text-indigo-300 underline font-semibold">Download File</a>
+                            <a href="${msg.file.url}" download="${msg.file.name}" class="text-[11px] underline font-semibold">Download File</a>
                         </div>
                     </div>
                 `;
             }
 
             const timeStr = new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Seen Receipt Icon
             let seenStatusHTML = '';
             if (msg.isSelf) {
                 seenStatusHTML = msg.seen 
-                    ? `<span class="text-sky-300 text-[10px] ml-1" title="Seen"><i class="fa-solid fa-check-double"></i> Seen</span>` 
-                    : `<span class="text-slate-400 text-[10px] ml-1" title="Sent"><i class="fa-solid fa-check"></i> Sent</span>`;
+                    ? `<span class="text-emerald-400 text-[10px] ml-1" title="Seen"><i class="fa-solid fa-check-double"></i></span>` 
+                    : `<span class="text-slate-400 text-[10px] ml-1" title="Sent"><i class="fa-solid fa-check"></i></span>`;
             }
 
             msgDiv.innerHTML = `
@@ -530,22 +624,15 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Persistent Local History Management
         function saveMessageToHistory(peerId, msgObj) {
-            if (!chatHistory[peerId]) {
-                chatHistory[peerId] = [];
-            }
+            if (!chatHistory[peerId]) chatHistory[peerId] = [];
             chatHistory[peerId].push(msgObj);
             saveChatHistoryToStorage();
             updateSavedConversationsUI();
         }
 
         function saveChatHistoryToStorage() {
-            try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(chatHistory));
-            } catch(e) {
-                console.warn("Storage quota exceeded or unavailable");
-            }
+            try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(chatHistory)); } catch(e) {}
         }
 
         function loadChatHistoryFromStorage() {
@@ -554,9 +641,7 @@
                 try {
                     chatHistory = JSON.parse(saved);
                     updateSavedConversationsUI();
-                } catch(e) {
-                    chatHistory = {};
-                }
+                } catch(e) { chatHistory = {}; }
             }
         }
 
@@ -568,7 +653,7 @@
             if (msgs.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-xs text-slate-500 my-auto p-4">
-                        No messages exchanged yet with <span class="font-mono text-slate-400">${escapeHTML(peerId)}</span>. Type below to send a message!
+                        No messages with <span class="font-mono text-slate-400">${escapeHTML(getDisplayName(peerId))}</span>.
                     </div>
                 `;
                 return;
@@ -582,68 +667,70 @@
             const keys = Object.keys(chatHistory);
 
             if (keys.length === 0) {
-                listContainer.innerHTML = `<p class="text-[11px] text-slate-500 italic p-2">No saved conversations yet.</p>`;
+                listContainer.innerHTML = `<p class="text-[11px] text-slate-500 italic p-2">No saved chats yet.</p>`;
                 return;
             }
 
             listContainer.innerHTML = '';
             keys.forEach(peerId => {
                 const count = chatHistory[peerId].length;
+                const unread = unreadCounts[peerId] || 0;
                 const item = document.createElement('div');
-                item.className = "flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 cursor-pointer transition";
+                
+                const boldClass = unread > 0 ? 'font-bold text-white' : 'font-medium text-slate-300';
+                
+                item.className = "flex items-center justify-between p-2 rounded-xl bg-theme-950/60 hover:bg-theme-100 border border-theme-800 cursor-pointer transition";
                 item.onclick = () => {
                     document.getElementById('remote-peer-id').value = peerId;
                     connectToPeer(peerId);
                 };
+                
                 item.innerHTML = `
                     <div class="overflow-hidden">
-                        <p class="font-medium text-slate-200 truncate text-[11px]">${escapeHTML(peerId)}</p>
-                        <p class="text-[10px] text-slate-500">${count} message${count > 1 ? 's' : ''}</p>
+                        <p class="truncate text-[11px] ${boldClass}">
+                            ${escapeHTML(getDisplayName(peerId))}
+                        </p>
+                        <p class="text-[10px] text-slate-500">${count} msg${count > 1 ? 's' : ''}</p>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"></i>
+                    <div class="flex items-center space-x-1.5">
+                        ${unread > 0 ? `<span class="px-1.5 py-0.5 bg-theme-accent text-white text-[9px] font-bold rounded-full">${unread} new</span>` : ''}
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"></i>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
         }
 
         function confirmClearHistory() {
-            if (confirm("Are you sure you want to clear all saved offline conversation history?")) {
+            if (confirm("Clear all conversation history?")) {
                 chatHistory = {};
+                unreadCounts = {};
                 localStorage.removeItem(LOCAL_STORAGE_KEY);
                 document.getElementById('chat-messages').innerHTML = '';
                 updateSavedConversationsUI();
             }
         }
 
-        // Typing & Helpers
         function handleTyping() {
             const payload = { type: 'typing' };
-            if (activeConn && activeConn.open) {
-                activeConn.send(payload);
-            }
-            if (broadcastChannel) {
-                broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
-            }
+            if (activeConn && activeConn.open) activeConn.send(payload);
+            if (broadcastChannel) broadcastChannel.postMessage({ targetPeerId: activePeerId, payload: payload });
         }
 
         function showTypingIndicator() {
             const indicator = document.getElementById('typing-indicator');
             indicator.classList.remove('hidden');
             clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                indicator.classList.add('hidden');
-            }, 2000);
+            typingTimeout = setTimeout(() => indicator.classList.add('hidden'), 2000);
         }
 
         function updateStatus(text, color) {
             document.getElementById('p2p-status-text').innerText = text;
-            const dot = document.getElementById('p2p-status-dot');
-            dot.className = `w-2 h-2 rounded-full inline-block bg-${color}-500`;
+            document.getElementById('p2p-status-dot').className = `w-2 h-2 rounded-full inline-block bg-${color}-500`;
         }
 
         function copyDirectChatLink() {
-            const myId = userProfile.peerId;
-            const link = `${window.location.origin}${window.location.pathname}?peer=${myId}`;
+            const link = `${window.location.origin}${window.location.pathname}?peer=${userProfile.peerId}`;
             const tempInput = document.createElement('input');
             tempInput.value = link;
             document.body.appendChild(tempInput);
@@ -675,34 +762,27 @@
             document.getElementById('file-preview-bar').classList.add('hidden');
         }
 
-        function toggleEmojiPicker() {
-            document.getElementById('emoji-popup').classList.toggle('hidden');
-        }
-
+        function toggleEmojiPicker() { document.getElementById('emoji-popup').classList.toggle('hidden'); }
         function insertEmoji(emoji) {
             document.getElementById('message-input').value += emoji;
             document.getElementById('emoji-popup').classList.add('hidden');
         }
 
-        function toggleSettingsModal() {
-            document.getElementById('modal-settings').classList.toggle('hidden');
-        }
+        function toggleSettingsModal() { document.getElementById('modal-settings').classList.toggle('hidden'); }
 
         function saveProfileSettings() {
             const newAlias = document.getElementById('settings-alias-input').value.trim();
             if (newAlias) {
                 userProfile.displayName = newAlias;
-                localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
                 document.getElementById('user-display-name').innerText = newAlias;
                 document.getElementById('user-avatar').innerText = newAlias.charAt(0).toUpperCase();
             }
+            localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
             toggleSettingsModal();
         }
 
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
     </script>
 </body>
